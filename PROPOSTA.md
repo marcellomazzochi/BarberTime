@@ -44,4 +44,4 @@ Sistema de gerenciamento de uma barbearia.
 1. Agregado: Agenda | Marcello Bimbatti Mazzochi
 2. Agregado: Barbeiro | 
 3. Agregado: Fidelidade |
-4. Agregado: Comissão |
+4. Agregado: Comissão | Ruan do Nascimento Silva
