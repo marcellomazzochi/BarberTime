@@ -11,3 +11,9 @@ data = datetime.now()
 def teste_agendar_cliente():
 
     cliente1 = cliente(id=100, nome="João")
+    agendamento = Agendamento(id=1, cliente=cliente1, barbeiro=barbeiro1, servico=servico1, data_hora=data)
+
+    agenda = Agenda()
+    agenda.adicionar_agendamento(agendamento)
+    
+    assert agenda.agendamentos[(barbeiro1, data)].status == "Agendado"
