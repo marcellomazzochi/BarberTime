@@ -9,3 +9,8 @@ class servico:
         self.nome = nome
         self.duracao = duracao
         self.preco = preco 
+        
+class barbeiro:
+    def __init__(self, id, nome):
+        self.id = id
+        self.nome = nome
