@@ -15,7 +15,7 @@ class barbeiro:
         self.id = id
         self.nome = nome
         
-class ItemAgenda:
+class Agendamento:
     def __init__(self, id, cliente, barbeiro, servicos, data_hora):
         self.id = id
         self.cliente = cliente
@@ -23,3 +23,15 @@ class ItemAgenda:
         self.servicos = servicos
         self.data_hora = data_hora
         self.status = "Agendado"
+
+class Agenda:
+    def __init__(self):
+        self.agendamentos = {}
+
+    def adicionar_agendamento(self, agendamento):
+        horario = (agendamento.barbeiro, agendamento.data_hora)
+        
+        if horario in self.agendamentos:
+            raise ValueError("Horario indisponivel")
+
+        self.agendamentos[horario] = agendamento
