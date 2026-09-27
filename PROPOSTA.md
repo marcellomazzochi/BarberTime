@@ -43,5 +43,5 @@ Sistema de gerenciamento de uma barbearia.
 **5. Divisão de Responsabilidades:**
 1. Agregado: Agenda | Marcello Bimbatti Mazzochi
 2. Agregado: Barbeiro | 
-3. Fidelidade |
-4. Comissão |
+3. Agregado: Fidelidade |
+4. Agregado: Comissão |
