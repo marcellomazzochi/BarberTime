@@ -16,11 +16,11 @@ class barbeiro:
         self.nome = nome
         
 class Agendamento:
-    def __init__(self, id, cliente, barbeiro, servicos, data_hora):
+    def __init__(self, id, cliente, barbeiro, servico, data_hora):
         self.id = id
         self.cliente = cliente
         self.barbeiro = barbeiro
-        self.servicos = servicos
+        self.servico = servico
         self.data_hora = data_hora
         self.status = "Agendado"
 
