@@ -36,8 +36,12 @@ Sistema de gerenciamento de uma barbearia.
 1. Agenda: Impedir agendamentos em horários já preenchidos
 2. Barbeiro: Impedir agendamentos fora do horário de trabalho
 3. Fidelidade: Impedir resgate de corte grátis se cliente tem no-show no histórico
+4. Comissão: Impedir geração de comissão para o barbeiro de atendimentos que não estejam concluídos
 
+--   
+   
 **5. Divisão de Responsabilidades:**
 1. Agregado: Agenda | Marcello Bimbatti Mazzochi
-2. Agregado: Barbeiro | Marcello Bimbatti Mazzochi
-
+2. Agregado: Barbeiro | 
+3. Fidelidade |
+4. Comissão |
