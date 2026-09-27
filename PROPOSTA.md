@@ -42,6 +42,6 @@ Sistema de gerenciamento de uma barbearia.
    
 **5. Divisão de Responsabilidades:**
 1. Agregado: Agenda | Marcello Bimbatti Mazzochi
-2. Agregado: Barbeiro | 
+2. Agregado: Barbeiro | Jonathan do Nascimento Melo
 3. Agregado: Fidelidade |
 4. Agregado: Comissão | Ruan do Nascimento Silva
