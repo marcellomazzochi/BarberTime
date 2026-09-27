@@ -37,3 +37,7 @@ Sistema de gerenciamento de uma barbearia.
 2. Barbeiro: Impedir agendamentos fora do horário de trabalho
 3. Fidelidade: Impedir resgate de corte grátis se cliente tem no-show no histórico
 
+**5. Divisão de Responsabilidades:**
+1. Agregado: Agenda | Marcello Bimbatti Mazzochi
+2. Agregado: Barbeiro | Marcello Bimbatti Mazzochi
+
