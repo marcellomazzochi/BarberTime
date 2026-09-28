@@ -1,3 +1,9 @@
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class preco:
+    valor: float
+
 class cliente:
     def __init__(self, id, nome):
         self.id = id
