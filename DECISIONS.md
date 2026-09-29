@@ -120,6 +120,3 @@
 
 ---
 
-#### Declaração de Uso de IA e Simplificações
-- **Uso de IA:** Conforme as regras da Seção 2.5, usei assistente de IA para tirar dúvidas pontuais de sintaxe do SQLAlchemy 2.0 no mapeamento de objetos de valor com `composite` e para revisar a estrutura dos arquivos `test_*`. As regras de negócio do agregado Comissão (status do atendimento, cálculo do percentual, pertencimento ao barbeiro), o modelo e todos os testes foram pensados e escritos para o nosso domínio. Também usei a IA para conferir se o estilo seguia o que os colegas já tinham implementado.
-- **Simplificações conscientes:** Nesta Fase 1 guardo o status do atendimento como um enum em coluna única e o serviço realizado como snapshot em três colunas (`servico_nome`, `servico_duracao`, `servico_preco`) na própria tabela `atendimentos`. Isso evita criar uma tabela associativa de serviços e uma junção a mais, mantendo a comissão desacoplada do cadastro de serviços. O percentual padrão da comissão ficou como 10%, podendo ser sobrescrito por atendimento; a comissão não tem estorno/cancelamento nesta fase.
