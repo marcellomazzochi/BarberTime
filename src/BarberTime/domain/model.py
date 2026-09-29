@@ -134,3 +134,137 @@ class Agenda:
             raise ValueError("Horario indisponivel")
 
         self.agendamentos[horario] = agendamento
+
+from enum import Enum
+
+
+class StatusAtendimento(Enum):
+    AGENDADO = "Agendado"
+    CONCLUIDO = "Concluido"
+    CANCELADO = "Cancelado"
+    FALTOU = "Faltou"
+
+
+@dataclass(frozen=True)
+class PercentualComissao:
+    valor: float
+
+    def __post_init__(self):
+        if not isinstance(self.valor, (int, float)) or isinstance(self.valor, bool):
+            raise ValueError("Percentual de comissao deve ser um numero")
+        if self.valor <= 0 or self.valor > 100:
+            raise ValueError("Percentual de comissao deve ser maior que 0 e menor ou igual a 100")
+
+    def aplicar(self, valor_base: float) -> float:
+        return round(float(valor_base) * self.valor / 100.0, 2)
+
+
+@dataclass(frozen=True)
+class ServicoRealizado:
+    nome: str
+    duracao: int = 0
+    preco: float = 0.0
+
+
+def _valor_preco(preco) -> float:
+    if hasattr(preco, "valor"):
+        return float(preco.valor)
+    return float(preco)
+
+
+def _normalizar_servico(servico) -> ServicoRealizado:
+    if isinstance(servico, ServicoRealizado):
+        return servico
+    if isinstance(servico, dict):
+        return ServicoRealizado(
+            nome=servico.get("nome", ""),
+            duracao=servico.get("duracao", 0),
+            preco=_valor_preco(servico.get("preco", 0)),
+        )
+    return ServicoRealizado(
+        nome=getattr(servico, "nome", ""),
+        duracao=getattr(servico, "duracao", 0),
+        preco=_valor_preco(getattr(servico, "preco", 0)),
+    )
+
+
+def _normalizar_data_hora(data_hora) -> datetime:
+    if isinstance(data_hora, str):
+        return datetime.fromisoformat(data_hora)
+    return data_hora
+
+
+class Atendimento:
+    def __init__(self, id, barbeiro, servico, data_hora, status=StatusAtendimento.AGENDADO):
+        self.id = id
+        self.barbeiro = barbeiro
+        self.servico = _normalizar_servico(servico)
+        self.data_hora = _normalizar_data_hora(data_hora)
+        self.status = status if isinstance(status, StatusAtendimento) else StatusAtendimento(status)
+
+    @property
+    def concluido(self) -> bool:
+        return self.status == StatusAtendimento.CONCLUIDO
+
+    def pode_gerar_comissao(self) -> bool:
+        return self.concluido
+
+    def concluir(self):
+        if self.status == StatusAtendimento.CANCELADO:
+            raise ValueError("Atendimento cancelado nao pode ser concluido")
+        self.status = StatusAtendimento.CONCLUIDO
+        return self
+
+    def cancelar(self):
+        if self.status == StatusAtendimento.CONCLUIDO:
+            raise ValueError("Atendimento ja concluido nao pode ser cancelado")
+        self.status = StatusAtendimento.CANCELADO
+        return self
+
+    def marcar_falta(self):
+        if self.status == StatusAtendimento.CONCLUIDO:
+            raise ValueError("Atendimento ja concluido nao pode ser marcado como falta")
+        self.status = StatusAtendimento.FALTOU
+        return self
+
+    def __eq__(self, other):
+        if not isinstance(other, Atendimento):
+            return False
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
+
+
+class Comissao:
+    def __init__(self, id, atendimento, percentual=None, barbeiro=None):
+        if atendimento is None:
+            raise ValueError("Atendimento e obrigatorio para gerar comissao")
+
+        if not atendimento.concluido:
+            raise ValueError(
+                "Nao e possivel gerar comissao para atendimento nao concluido"
+            )
+
+        barbeiro = barbeiro if barbeiro is not None else atendimento.barbeiro
+        if atendimento.barbeiro is not None and barbeiro != atendimento.barbeiro:
+            raise ValueError("Atendimento nao pertence ao barbeiro informado")
+
+        if percentual is None:
+            percentual = PercentualComissao(10.0)
+        elif not isinstance(percentual, PercentualComissao):
+            percentual = PercentualComissao(percentual)
+
+        self.id = id
+        self.atendimento = atendimento
+        self.barbeiro = barbeiro
+        self.percentual = percentual
+        self.valor = percentual.aplicar(atendimento.servico.preco)
+
+    def __eq__(self, other):
+        if not isinstance(other, Comissao):
+            return False
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
