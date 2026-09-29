@@ -17,3 +17,5 @@ def teste_agendar_cliente():
     agenda.adicionar_agendamento(agendamento)
     
     assert agenda.agendamentos[(barbeiro1, data)].status == "Agendado"
+
+def teste_agendar_mesmo_horario():
