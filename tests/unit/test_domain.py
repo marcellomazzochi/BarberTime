@@ -19,3 +19,12 @@ def teste_agendar_cliente():
     assert agenda.agendamentos[(barbeiro1, data)].status == "Agendado"
 
 def teste_agendar_mesmo_horario():
+    
+    cliente1 = cliente(id=100, nome="João")
+    cliente2 = cliente(id=101, nome="Mario")	
+    
+    agendamento1 = Agendamento(id=1, cliente=cliente1, barbeiro=barbeiro1, servico=servico1, data_hora=data)
+    agendamento2 = Agendamento(id=2, cliente=cliente2, barbeiro=barbeiro1, servico=servico1, data_hora=data)
+    
+    agenda = Agenda()
+    agenda.adicionar_agendamento(agendamento1)
