@@ -28,3 +28,7 @@ def teste_agendar_mesmo_horario():
     
     agenda = Agenda()
     agenda.adicionar_agendamento(agendamento1)
+    
+    with pytest.raises(ValueError):
+    	agenda.adicionar_agendamento(agendamento2)
+        
