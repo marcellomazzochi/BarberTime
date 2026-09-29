@@ -16,6 +16,12 @@ get_session = sessionmaker(bind=engine)
 def get_repo(session):
     return repository.SqlAlchemyBarbeiroRepository(session)
 
+def get_atendimento_repo(session):
+    return repository.SqlAlchemyAtendimentoRepository(session)
+
+def get_comissao_repo(session):
+    return repository.SqlAlchemyComissaoRepository(session)
+
 @app.route("/barbeiros", methods=["POST"])
 def post_barbeiro():
     session = get_session()
@@ -99,6 +105,117 @@ def post_validar_horario(barbeiro_id):
         return jsonify({"erro": f"Campo obrigatorio ausente: {str(e)}"}), 400
     except ValueError as e:
         return jsonify({"valido": False, "erro": str(e)}), 400
+    finally:
+        session.close()
+
+@app.route("/atendimentos", methods=["POST"])
+def post_atendimento():
+    session = get_session()
+    atendimento_repo = get_atendimento_repo(session)
+    barbeiro_repo = get_repo(session)
+    data = request.get_json() or {}
+    try:
+        resultado = services.registrar_atendimento(
+            atendimento_id=data["id"],
+            barbeiro_id=data["barbeiro_id"],
+            servico=data["servico"],
+            data_hora=data["data_hora"],
+            atendimento_repo=atendimento_repo,
+            barbeiro_repo=barbeiro_repo,
+            session=session,
+        )
+        return jsonify(resultado), 201
+    except KeyError as e:
+        return jsonify({"erro": f"Campo obrigatorio ausente: {str(e)}"}), 400
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    finally:
+        session.close()
+
+@app.route("/atendimentos/<int:atendimento_id>", methods=["GET"])
+def get_atendimento(atendimento_id):
+    session = get_session()
+    atendimento_repo = get_atendimento_repo(session)
+    try:
+        resultado = services.consultar_atendimento(
+            atendimento_id=atendimento_id, repo=atendimento_repo
+        )
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 404
+    finally:
+        session.close()
+
+@app.route("/atendimentos/<int:atendimento_id>/concluir", methods=["POST"])
+def post_concluir_atendimento(atendimento_id):
+    session = get_session()
+    atendimento_repo = get_atendimento_repo(session)
+    try:
+        resultado = services.concluir_atendimento(
+            atendimento_id=atendimento_id,
+            atendimento_repo=atendimento_repo,
+            session=session,
+        )
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    finally:
+        session.close()
+
+@app.route("/comissoes", methods=["POST"])
+def post_comissao():
+    session = get_session()
+    atendimento_repo = get_atendimento_repo(session)
+    comissao_repo = get_comissao_repo(session)
+    data = request.get_json() or {}
+    try:
+        resultado = services.gerar_comissao(
+            comissao_id=data["id"],
+            atendimento_id=data["atendimento_id"],
+            percentual=data.get("percentual"),
+            atendimento_repo=atendimento_repo,
+            comissao_repo=comissao_repo,
+            session=session,
+        )
+        return jsonify(resultado), 201
+    except KeyError as e:
+        return jsonify({"erro": f"Campo obrigatorio ausente: {str(e)}"}), 400
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    finally:
+        session.close()
+
+@app.route("/comissoes", methods=["GET"])
+def get_comissoes():
+    session = get_session()
+    comissao_repo = get_comissao_repo(session)
+    try:
+        resultado = services.listar_comissoes(repo=comissao_repo)
+        return jsonify(resultado), 200
+    finally:
+        session.close()
+
+@app.route("/comissoes/<int:comissao_id>", methods=["GET"])
+def get_comissao_by_id(comissao_id):
+    session = get_session()
+    comissao_repo = get_comissao_repo(session)
+    try:
+        resultado = services.consultar_comissao(comissao_id=comissao_id, repo=comissao_repo)
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 404
+    finally:
+        session.close()
+
+@app.route("/barbeiros/<int:barbeiro_id>/comissoes", methods=["GET"])
+def get_comissoes_do_barbeiro(barbeiro_id):
+    session = get_session()
+    comissao_repo = get_comissao_repo(session)
+    try:
+        resultado = services.listar_comissoes_por_barbeiro(
+            barbeiro_id=barbeiro_id, repo=comissao_repo
+        )
+        return jsonify(resultado), 200
     finally:
         session.close()
 
