@@ -120,3 +120,41 @@
 
 ---
 
+#### Fase 1
+
+#### Integrante: Marcello Bimbatti Mazzochi (`marcellomazzochi`)
+**Agregado sob minha responsabilidade:** Agenda
+
+---
+
+**O que eu fiz:**
+- Idealizei o modelo de negócio do projeto e montei a estrutura obrigatória do repositório.
+- Modelei a primeira versão das entidades e objeto de valor das classes: `cliente`, `servico`, `barbeiro`, `preco`, `Agendamento` e o agregado `Agenda`.
+- No agregado `Agenda` garanti o bloqueio na marcação de horários duplicados para o mesmo barbeiro com o método `adicionar_agendamento`.
+- Escrevi testes unitários (`test_domain.py`) para agendamento e validação do bloqueio para horários conflitantes.
+- Configurei o arquivo .github/workflows/ci.yml
+  
+**Arquivos:** `src/BarberTime/domain/model.py`, `tests/unit/test_domain.py`, `.github/workflows/ci.yml`.
+
+**Commits:**
+b1773de update ci.yml,
+cd598c6 Update CI,
+97a30b0 Add pythonpath,
+f2236bb Add ci.yml,
+3a7ad95 (tag: fase1-checkpoint-1) Add teste agendar mesmo horario,
+3b45796 add agendar_mesmo_horario,
+caf9c53 Funcao agendar mesmo horario,
+ea737f6 Add objeto de valor preco,
+9827d16 add AbstractRepository,
+bb1c5c3 add import abc,
+bcaabb6 update test_domain.py,
+53747a1 update test_domain.py,
+cf5d00c update agendamento,
+2d05a1f update test_domain.py,
+
+**Uso de IA Generativa :**
+- Utilizei IA para configuração do arquivo `.github/workflows/ci.yml` do GitHub Actions e para entender a arquitetura exigida no projeto.
+
+**Justificativa da decisão de projeto:** 
+- O tema do projeto foi escolhido pensando em uma aplicação que pudesse ser demandada em um ambiente corporativo.
+- A classe `Agenda` tem o dicionário `agendamentos` com a chave: `barbeiro, data_hora, que garante o modelo de negócio que proíbe sobreposições de horários com o mesmo barbeiro.
