@@ -301,7 +301,7 @@ class Fidelidade:
         self.id = id
         self.cliente_id = cliente_id
         self.cortes_concluidos = cortes_concluidos
-        self.possui_no_show = bool(possui_no_show)
+        self._possui_no_show = False
         self.cortes_para_gratis = cortes_para_gratis
 
     @property
