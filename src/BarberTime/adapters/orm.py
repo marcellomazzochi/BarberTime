@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, Integer, String, Float, DateTime, ForeignKey, Enum as SqlEnum, MetaData
+from sqlalchemy import Table, Column, Integer, String, Float, DateTime, ForeignKey, Enum as SqlEnum, MetaData, Boolean
 from sqlalchemy.orm import registry, relationship, composite
 from BarberTime.domain.model import (
     barbeiro,
@@ -7,6 +7,7 @@ from BarberTime.domain.model import (
     ServicoRealizado,
     PercentualComissao,
     StatusAtendimento,
+    Fidelidade,
 )
 
 metadata = MetaData()
@@ -44,6 +45,23 @@ comissoes = Table(
     Column("valor", Float, nullable=False),
 )
 
+fidelidades = Table(
+    "fidelidades",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("cliente_id", Integer, nullable=False, unique=True),
+    Column("cortes_concluidos", Integer, nullable=False, default=0),
+    Column(
+        "possui_no_show",
+        Boolean,
+        key="_possui_no_show",
+        nullable=False,
+        default=False,
+    ),
+    Column("cortes_para_gratis", Integer, nullable=False, default=10),
+)
+
+
 def start_mappers():
     classes_mapeadas = {m.class_ for m in mapper_registry.mappers}
     if barbeiro not in classes_mapeadas:
@@ -71,4 +89,9 @@ def start_mappers():
                 "atendimento": relationship(Atendimento),
                 "percentual": composite(PercentualComissao, comissoes.c.percentual_valor),
             },
+        )
+    if Fidelidade not in classes_mapeadas:
+        mapper_registry.map_imperatively(
+            Fidelidade,
+            fidelidades,
         )
