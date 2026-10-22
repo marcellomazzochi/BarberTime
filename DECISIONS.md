@@ -158,3 +158,22 @@ cf5d00c update agendamento,
 **Justificativa da decisão de projeto:** 
 - O tema do projeto foi escolhido pensando em uma aplicação que pudesse ser demandada em um ambiente corporativo.
 - A classe `Agenda` tem o dicionário `agendamentos` com a chave: `barbeiro, data_hora, que garante o modelo de negócio que proíbe sobreposições de horários com o mesmo barbeiro.
+
+
+
+
+
+### Ruan do Nascimento Silva - Checkpoint 1
+
+**O que fiz e arquivos modificados:**
+Fiquei responsável pela estruturação inicial da documentação arquitetural. Escrevi as seções de Escopo, Requisitos Arquiteturais (em formato de cenários) e a Arquitetura Atual com o diagrama Mermaid no arquivo `docs/arquitetura.md`. Também redigi o meu ADR pessoal focado no isolamento do banco de dados no arquivo `docs/adr/0001-uso-do-padrao-repository-para-isolar-sqlalchemy.md`.
+
+**Commits:**
+- `5dffab1dc6e57ecc480ea199a1dab8a5334206c7` - docs: adiciona escopo, requisitos e diagrama da arquitetura atual.
+- `ac69c3a2fdcf61ce2e2d5134dcb510673f91eb29` - docs: adiciona ADR sobre a utilizacao do padrao Repository.
+
+**Decisão de projeto:**
+Decidi documentar a adoção do padrão Repository no BarberTime porque centralizar o acesso aos dados nos permite testar a lógica de cálculo de comissões mais rapidamente em memória, sem depender do banco de dados real.
+
+**Uso de IA:**
+Utilizei o LLM Antigravity para me auxiliar na estruturação e formatação inicial dos arquivos Markdown. Forneci o código atual do nosso repositório como contexto e pedi que a IA gerasse os rascunhos do diagrama Mermaid e do texto base do ADR seguindo rigorosamente as restrições da disciplina, como os cenários mensuráveis e a estrutura de trade-offs. Todo o conteúdo retornado foi revisado, validado e ajustado por mim para refletir as decisões reais do projeto.
