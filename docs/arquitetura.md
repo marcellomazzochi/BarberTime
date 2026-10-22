@@ -256,11 +256,16 @@ A arquitetura atual representa um equilíbrio intencional entre forças concorre
 - **Impacto potencial:** Inconsistência de dados no banco relacional caso uma exceção seja levantada após a gravação de um agregado, mas antes da persistência do outro.
 - **Estratégia de mitigação adotada:** Manter operações de serviço focadas em um único agregado por transação no escopo atual da barbearia e validar atomicidade através de testes E2E com rollback em caso de exceções capturadas pelas rotas Flask.
 
+#### Risco 3: Concorrência de Escrita e Locks de Arquivo no SQLite sob Picos de Acesso
+- **Descrição do risco:** O banco de persistência em ambiente local é o SQLite em arquivo (`barbertime.db`), que implementa bloqueios em nível de arquivo durante transações de escrita. Em cenários reais com múltiplos barbeiros e clientes acessando simultaneamente para agendar horários ou concluir atendimentos, requisições concorrentes de escrita podem sofrer com exceções de contenção (`OperationalError: database is locked`). Essa restrição de concorrência não é evidenciada na suíte unitária (que usa Fakes) nem na suíte E2E sequencial.
+- **Impacto potencial:** Degradação temporária de resposta ou falhas de escrita (HTTP 500) caso múltiplos barbeiros tentem registrar atendimentos simultaneamente.
+- **Estratégia de mitigação adotada:** A arquitetura em Ports & Adapters e o isolamento via Repository permitem migrar a infraestrutura para um SGBD cliente-servidor robusto (como PostgreSQL ou MySQL) modificando exclusivamente a string de conexão e o engine do SQLAlchemy em `entrypoints/flask_app.py`, sem tocar em uma única linha de regra de negócio no domínio ou nos serviços.
+
 ---
 
 ## 5. Alternativa
 
-> *Nota: Esta seção será preenchida pelo Colega 2 (Arquitetura Alternativa e ADR), contemplando a comparação da arquitetura atual com pelo menos uma alternativa concreta (como Flask com Active Record e Transaction Script) avaliada sob os mesmos três atributos de qualidade.*
+> *Nota: Esta seção contempla a comparação da arquitetura atual com pelo menos uma alternativa concreta (como Flask com Active Record e Transaction Script) avaliada sob os mesmos três atributos de qualidade.*
 
 ---
 
@@ -281,6 +286,17 @@ Para fundamentar empiricamente a análise de trade-offs apresentada na Seção 4
   - **Suíte Unitária (`tests/unit/`):** **58 testes** executados em **0.10 segundos** (tempo médio de ~1,72 ms por teste unitário). Nenhum desses 58 testes instancia conexão de banco de dados, engine SQLAlchemy ou servidor Flask.
   - **Suíte de Integração e E2E (`tests/integration/` + `tests/e2e/`):** **27 testes** executados em **0.65 segundos**, com setup de fixtures que atinge até 0.64s na inicialização de tabelas e contexto da API Flask (`tests/e2e/test_api.py::test_api_criar_barbeiro`).
   - **Comparativo quantitativo:** A suíte de testes unitários em memória pura executa mais que o dobro de casos de teste (58 contra 27) em **6,5 vezes menos tempo** do que a suíte integrada. A suíte completa (85 testes) passa em **1.77 segundos**, mantendo-se estritamente abaixo do limite de 2 segundos estipulado no cenário de testabilidade.
+
+#### Tabela Comparativa da Pirâmide de Testes (Medições Reais com pytest)
+
+| Nível da Pirâmide | Diretório | Qtd. Testes | Tempo de Execução | Tempo Médio/Teste | Infraestrutura Ativa | Isolamento |
+|---|---|---|---|---|---|---|
+| **Unitário (Domínio e Serviços)** | `tests/unit/` | 58 | **0.10s** | ~1,72 ms | Zero (Apenas `FakeRepository`s em memória) | Total |
+| **Integração (Repositórios reais)** | `tests/integration/` | 11 | **0.18s** | ~16,36 ms | SQLAlchemy + SQLite `:memory:` | Médio |
+| **Ponta a Ponta (API REST)** | `tests/e2e/` | 16 | **0.47s** | ~29,37 ms | Test Client Flask + Sessão SQLAlchemy | Completo |
+| **Suíte Global** | `tests/` | 85 | **0.75s** | ~8,82 ms | Misto (Conforme o nível) | Pirâmide balanceada |
+
+Essa distribuição demonstra que 68,2% de todos os testes do sistema (58 de 85) encontram-se na base unitária, executando em 0.10s e fornecendo feedback quase instantâneo aos desenvolvedores durante o ciclo de desenvolvimento.
 
 ### Evidência 3: Custo Estrutural de Persistência vs. Regra de Negócio (Métricas de Código)
 - **Afirmação apoiada:** A separação de responsabilidades com repositórios triplicados e mapeamento imperativo acarreta um volume de código de persistência comparável ao do próprio domínio de negócio, confirmando empiricamente o Trade-off 1 (Testabilidade vs. Boilerplate).

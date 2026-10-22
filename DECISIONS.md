@@ -163,6 +163,10 @@ cf5d00c update agendamento,
 
 
 
+---
+
+## Parte 2 — Fase 2
+
 ### Ruan do Nascimento Silva - Checkpoint 1
 
 **O que fiz e arquivos modificados:**
@@ -177,3 +181,27 @@ Decidi documentar a adoção do padrão Repository no BarberTime porque centrali
 
 **Uso de IA:**
 Utilizei o LLM Antigravity para me auxiliar na estruturação e formatação inicial dos arquivos Markdown. Forneci o código atual do nosso repositório como contexto e pedi que a IA gerasse os rascunhos do diagrama Mermaid e do texto base do ADR seguindo rigorosamente as restrições da disciplina, como os cenários mensuráveis e a estrutura de trade-offs. Todo o conteúdo retornado foi revisado, validado e ajustado por mim para refletir as decisões reais do projeto.
+
+---
+
+### Jonathan do Nascimento Melo (`JonathanMelo0`) — Checkpoint 1
+
+**O que fiz e arquivos modificados:**
+- Fiquei responsável por redigir a análise de trade-offs (Seção 4) e levantar as evidências reais (Seção 6) no `docs/arquitetura.md`, além de escrever o meu ADR em `docs/adr/0002-mapeamento-imperativo-com-sqlalchemy-para-preservar-dominio-puro.md`.
+- Na análise de trade-offs, avaliei como a arquitetura atual (Ports & Adapters, Service Layer e Mapeamento Imperativo) afeta a manutenibilidade, testabilidade e desempenho. Destaquei os trade-offs práticos que enfrentamos, como a alta testabilidade que exigiu criar classes Fake para cada repositório, e os riscos de concorrência com locks de arquivo no SQLite sob acessos concorrentes.
+- Na parte de evidências, levantei dados reais da execução do pytest mostrando a velocidade da suíte unitária (58 testes em 0.10s) contra os testes com banco/Flask (0.65s), a adição modular do agregado Comissão sem quebrar o código anterior, e a proporção de linhas de persistência comparadas ao domínio.
+- Escrevi o ADR 0002 registrando a decisão que tomei no agregado do Barbeiro de usar o Classical Mapping (`map_imperatively`) com `composite` para os Value Objects de horário, explicando o contexto e as alternativas descartadas.
+
+**Arquivos:**
+- `docs/arquitetura.md`
+- `docs/adr/0002-mapeamento-imperativo-com-sqlalchemy-para-preservar-dominio-puro.md`
+- `DECISIONS.md`
+
+**Commits:**
+- Commits de trade-offs e evidências em `docs/arquitetura.md` (`f478be6`) e do ADR 0002 (`faeafa3`).
+
+**Decisão de projeto:**
+Decidi documentar a adoção do mapeamento imperativo (`map_imperatively`) no ADR 0002 porque essa foi a decisão técnica que permitiu manter o Barbeiro e o HorarioTrabalho como classes Python puras, validando expediente e horários sem nenhuma amarra com o SQLAlchemy ou banco de dados.
+
+**Uso de IA:**
+Usei IA pontualmente para tirar dúvidas sobre a formatação dos cenários de atributos de qualidade em Markdown e revisar a concordância dos textos de trade-offs e do ADR. Todo o raciocínio, dados da suíte de testes e argumentos técnicos foram feitos com base no código do nosso projeto.

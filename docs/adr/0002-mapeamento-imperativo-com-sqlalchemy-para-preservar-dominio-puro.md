@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | Aceita |
 | **Data** | 2026-10-22 |
-| **Autores** | Jonathan do Nascimento Melo (Colega 1) |
+| **Autores** | Jonathan do Nascimento Melo |
 | **Tema** | Arquitetura de Persistência, Isolamento de Infraestrutura e Pureza do Modelo de Domínio |
 
 ---
@@ -109,6 +109,10 @@ def start_mappers():
 ```
 
 Essa separação garante que a inicialização do ORM ocorra apenas quando a aplicação real (Flask) ou os testes de integração forem iniciados, mantendo o domínio totalmente independente.
+
+### Integração com a Infraestrutura de Testes e Fixtures
+
+Um aspecto decisivo desta escolha técnica foi a integração com as fixtures em `tests/conftest.py`. Com o mapeamento imperativo, pudemos criar a fixture `sqlite_session` operando sobre `sqlite:///:memory:`, onde os esquemas de tabelas (`metadata.create_all(engine)`) são criados dinamicamente e as sessões de teste executam com descarte limpo de banco em memória. Isso isola completamente os testes de integração com banco dos testes unitários de domínio (que utilizam `FakeRepository`), garantindo que o ORM seja validado sem risco de contaminação de estado entre os testes.
 
 ---
 
