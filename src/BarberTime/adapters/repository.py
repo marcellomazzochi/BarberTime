@@ -1,5 +1,10 @@
 import abc
-from BarberTime.domain.model import barbeiro, Atendimento, Comissao
+from BarberTime.domain.model import (
+    barbeiro,
+    Atendimento,
+    Comissao,
+    Fidelidade,
+)
 
 class AbstractRepository(abc.ABC):
     @abc.abstractmethod
@@ -173,9 +178,73 @@ class FakeComissaoRepository(AbstractComissaoRepository):
         return [c for c in self._comissoes if getattr(c.barbeiro, "id", None) == barbeiro_id]
 
 
+class AbstractFidelidadeRepository(AbstractRepository):
+    @abc.abstractmethod
+    def list(self) -> list:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_by_cliente(self, cliente_id: int):
+        raise NotImplementedError
+
+
+class SqlAlchemyFidelidadeRepository(AbstractFidelidadeRepository):
+    def __init__(self, session):
+        self.session = session
+
+    def add(self, fidelidade: Fidelidade):
+        self.session.add(fidelidade)
+
+    def get(self, fidelidade_id: int):
+        return (
+            self.session.query(Fidelidade)
+            .filter_by(id=fidelidade_id)
+            .first()
+        )
+
+    def get_by_cliente(self, cliente_id: int):
+        return (
+            self.session.query(Fidelidade)
+            .filter_by(cliente_id=cliente_id)
+            .first()
+        )
+
+    def list(self) -> list:
+        return self.session.query(Fidelidade).all()
+
+
+class FakeFidelidadeRepository(AbstractFidelidadeRepository):
+    def __init__(self, fidelidades=None):
+        self._fidelidades = list(fidelidades) if fidelidades else []
+
+    def add(self, fidelidade: Fidelidade):
+        if self.get_by_cliente(fidelidade.cliente_id) is not None:
+            raise ValueError("Cliente já possui cadastro de fidelidade")
+
+        self._fidelidades.append(fidelidade)
+
+    def get(self, fidelidade_id: int):
+        for fidelidade in self._fidelidades:
+            if fidelidade.id == fidelidade_id:
+                return fidelidade
+        return None
+
+    def get_by_cliente(self, cliente_id: int):
+        for fidelidade in self._fidelidades:
+            if fidelidade.cliente_id == cliente_id:
+                return fidelidade
+        return None
+
+    def list(self) -> list:
+        return list(self._fidelidades)
+
+
+
 BarbeiroRepository = SqlAlchemyBarbeiroRepository
 FakeRepository = FakeBarbeiroRepository
 AtendimentoRepository = SqlAlchemyAtendimentoRepository
 ComissaoRepository = SqlAlchemyComissaoRepository
 FakeAtendimentoRepo = FakeAtendimentoRepository
 FakeComissaoRepo = FakeComissaoRepository
+FidelidadeRepository = SqlAlchemyFidelidadeRepository
+FakeFidelidadeRepo = FakeFidelidadeRepository
