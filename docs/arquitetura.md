@@ -263,9 +263,36 @@ A arquitetura atual representa um equilíbrio intencional entre forças concorre
 
 ---
 
-## 5. Alternativa
+## 5. Alternativa Arquitetural
 
-> *Nota: Esta seção contempla a comparação da arquitetura atual com pelo menos uma alternativa concreta (como Flask com Active Record e Transaction Script) avaliada sob os mesmos três atributos de qualidade.*
+### 5.1 Alternativa considerada: Flask com Active Record e Transaction Script
+
+A alternativa considerada consiste em manter o Flask como framework HTTP e o SQLAlchemy como ORM, mas substituir a separação explícita entre domínio, repositórios e camada de serviço por uma estrutura mais simples.
+
+Nesse modelo, as classes de negócio seriam associadas diretamente à persistência por meio do padrão Active Record. Cada entidade poderia consultar, inserir e atualizar seus próprios registros. Os casos de uso seriam implementados como funções procedurais no padrão Transaction Script, em que cada função concentra o fluxo de uma operação, incluindo validações, consultas e alterações no banco.
+
+Por exemplo, o caso de uso de geração de comissão poderia ser implementado em uma única função que recupera o atendimento, verifica seu status, calcula o valor e persiste a comissão. A rota Flask chamaria essa função e devolveria a resposta HTTP.
+
+Essa abordagem reduziria a quantidade de arquivos e abstrações, mas aproximaria as regras de negócio dos detalhes de persistência.
+
+### 5.2 Comparação pelos atributos de qualidade
+
+| Atributo de qualidade | Arquitetura atual: Ports & Adapters, Repository e Service Layer                                                                                                                                                                                           | Alternativa: Active Record e Transaction Script                                                                                                                                                                                                                                                       |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Manutenibilidade**  | Favorece a evolução independente do domínio, dos repositórios e dos serviços. Novas funcionalidades podem exigir alterações em vários arquivos e a manutenção de interfaces, implementações SQLAlchemy e fakes.                                           | Reduz a quantidade de classes, interfaces e arquivos envolvidos em operações simples. Entretanto, mudanças na persistência podem afetar diretamente as entidades e os casos de uso, aumentando o acoplamento conforme as regras crescem.                                                              |
+| **Testabilidade**     | Permite testar regras de negócio e serviços com Fake Repositories, sem inicializar o banco ou o Flask. Também possibilita testes de integração separados para validar o ORM real. O custo é manter os fakes consistentes com os repositórios de produção. | As funções de caso de uso podem ser testadas diretamente, mas o acoplamento entre entidades e persistência pode exigir banco de dados ou mecanismos adicionais de isolamento. Testes unitários independentes da infraestrutura tornam-se mais difíceis quando as regras dependem diretamente do ORM.  |
+| **Desempenho**        | A requisição percorre rota, serviço, repositório, ORM e banco. Essa separação introduz alguma indireção, embora consultas específicas nos repositórios permitam controlar os dados recuperados.                                                           | A menor quantidade de camadas pode reduzir parte da sobrecarga de chamadas e simplificar operações simples. Contudo, o desempenho real continua dependendo das consultas SQL, dos índices, do volume de dados e da serialização; a redução de camadas não garante, por si só, respostas mais rápidas. |
+
+### 5.3 Conclusão da comparação
+
+Para o BarberTime, considero mais adequada a arquitetura atual, mesmo com a quantidade adicional de código. O sistema possui regras de negócio que precisam ser protegidas, como impedir a geração de comissão para um atendimento não concluído e validar os horários de trabalho dos barbeiros. Manter essas regras no domínio e separar a persistência facilita testar cada comportamento isoladamente.
+
+A alternativa com Active Record e Transaction Script seria razoável para uma aplicação pequena, com poucas regras e operações predominantemente CRUD. Ela reduziria o trabalho inicial e deixaria alguns fluxos mais diretos. Porém, no BarberTime, o ganho de simplicidade poderia trazer mais acoplamento e dificultar a evolução das regras.
+
+Também não considero possível afirmar que a arquitetura atual é mais rápida sem realizar medições equivalentes nas duas implementações. A escolha prioriza manutenibilidade e testabilidade, enquanto o desempenho deve continuar sendo acompanhado por testes e medições reais.
+
+Portanto, manteria Ports & Adapters, Repository e Service Layer como estrutura principal, aceitando o custo adicional de abstrações em troca de maior isolamento das regras de negócio e de testes mais independentes.
+
 
 ---
 
