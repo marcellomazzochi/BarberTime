@@ -1,5 +1,5 @@
 from datetime import datetime
-from BarberTime.domain.model import barbeiro, Atendimento, Comissao, StatusAtendimento
+from BarberTime.domain.model import barbeiro, Atendimento, Comissao, StatusAtendimento, Fidelidade
 
 def cadastrar_barbeiro(
     id: int,
@@ -212,3 +212,140 @@ def listar_comissoes(repo) -> list[dict]:
 
 def listar_comissoes_por_barbeiro(barbeiro_id: int, repo) -> list[dict]:
     return [_comissao_para_dict(c) for c in repo.list_by_barbeiro(barbeiro_id)]
+
+
+
+def _fidelidade_para_dict(fidelidade: Fidelidade) -> dict:
+    return {
+        "id": fidelidade.id,
+        "cliente_id": fidelidade.cliente_id,
+        "cortes_concluidos": fidelidade.cortes_concluidos,
+        "cortes_para_gratis": fidelidade.cortes_para_gratis,
+        "cortes_restantes": fidelidade.cortes_restantes,
+        "possui_no_show": fidelidade.possui_no_show,
+        "corte_gratis_disponivel": fidelidade.corte_gratis_disponivel,
+        "pode_resgatar_corte_gratis": fidelidade.pode_resgatar_corte_gratis(),
+    }
+
+# funções de fidelidade
+def cadastrar_fidelidade(
+    id: int,
+    cliente_id: int,
+    fidelidade_repo,
+    cortes_para_gratis: int = 10,
+    session=None,
+) -> dict:
+    if fidelidade_repo.get(id) is not None:
+        raise ValueError(f"Fidelidade com id {id} ja cadastrada")
+
+    if fidelidade_repo.get_by_cliente(cliente_id) is not None:
+        raise ValueError(
+            f"Cliente {cliente_id} ja possui cadastro de fidelidade"
+        )
+
+    fidelidade = Fidelidade(
+        id=id,
+        cliente_id=cliente_id,
+        cortes_concluidos=0,
+        cortes_para_gratis=cortes_para_gratis,
+    )
+
+    fidelidade_repo.add(fidelidade)
+
+    if session is not None:
+        session.commit()
+
+    return _fidelidade_para_dict(fidelidade)
+
+
+def consultar_fidelidade(fidelidade_id: int, fidelidade_repo) -> dict:
+    fidelidade = fidelidade_repo.get(fidelidade_id)
+
+    if fidelidade is None:
+        raise ValueError(
+            f"Fidelidade com id {fidelidade_id} nao encontrada"
+        )
+
+    return _fidelidade_para_dict(fidelidade)
+
+
+def consultar_fidelidade_por_cliente(
+    cliente_id: int,
+    fidelidade_repo,
+) -> dict:
+    fidelidade = fidelidade_repo.get_by_cliente(cliente_id)
+
+    if fidelidade is None:
+        raise ValueError(
+            f"Fidelidade do cliente {cliente_id} nao encontrada"
+        )
+
+    return _fidelidade_para_dict(fidelidade)
+
+
+def listar_fidelidades(fidelidade_repo) -> list[dict]:
+    return [
+        _fidelidade_para_dict(fidelidade)
+        for fidelidade in fidelidade_repo.list()
+    ]
+
+
+def registrar_corte_fidelidade(
+    fidelidade_id: int,
+    fidelidade_repo,
+    session=None,
+) -> dict:
+    fidelidade = fidelidade_repo.get(fidelidade_id)
+
+    if fidelidade is None:
+        raise ValueError(
+            f"Fidelidade com id {fidelidade_id} nao encontrada"
+        )
+
+    fidelidade.registrar_corte_concluido()
+
+    if session is not None:
+        session.commit()
+
+    return _fidelidade_para_dict(fidelidade)
+
+
+def registrar_no_show_fidelidade(
+    fidelidade_id: int,
+    fidelidade_repo,
+    session=None,
+) -> dict:
+    fidelidade = fidelidade_repo.get(fidelidade_id)
+
+    if fidelidade is None:
+        raise ValueError(
+            f"Fidelidade com id {fidelidade_id} nao encontrada"
+        )
+
+    fidelidade.registrar_no_show()
+
+    if session is not None:
+        session.commit()
+
+    return _fidelidade_para_dict(fidelidade)
+
+
+def resgatar_corte_gratis(
+    fidelidade_id: int,
+    fidelidade_repo,
+    session=None,
+) -> dict:
+    fidelidade = fidelidade_repo.get(fidelidade_id)
+
+    if fidelidade is None:
+        raise ValueError(
+            f"Fidelidade com id {fidelidade_id} nao encontrada"
+        )
+
+    fidelidade.resgatar_corte_gratis()
+
+    if session is not None:
+        session.commit()
+
+    return _fidelidade_para_dict(fidelidade)
+
