@@ -1,6 +1,10 @@
 import pytest
 
-from BarberTime.domain.fidelidade import Fidelidade
+from BarberTime.domain.model import (
+    Fidelidade,
+    Atendimento,
+    StatusAtendimento,
+)
 
 
 def criar_fidelidade(**kwargs):
@@ -13,6 +17,24 @@ def criar_fidelidade(**kwargs):
     }
     dados.update(kwargs)
     return Fidelidade(**dados)
+
+atendimento = Atendimento(
+    id=1,
+    barbeiro=None,
+    servico={"nome": "Corte", "duracao": 30, "preco": 40},
+    data_hora="2026-10-22T10:00:00",
+)
+
+atendimento.marcar_falta()
+
+fidelidade = Fidelidade(
+    id=1,
+    cliente_id=100,
+    cortes_concluidos=10,
+    historico_atendimentos=[atendimento],
+)
+
+assert fidelidade.pode_resgatar_corte_gratis() is False
 
 
 def test_cliente_pode_resgatar_com_meta_atingida_sem_no_show():
