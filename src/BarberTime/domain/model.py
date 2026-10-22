@@ -340,6 +340,11 @@ class Fidelidade:
         """Registra um corte concluído no progresso da fidelidade."""
         self.cortes_concluidos += 1
         return self
+    
+    def registrar_no_show(self):
+        """Registra um no-show e bloqueia o resgate do benefício."""
+        self._possui_no_show = True
+        return self
 
     def pode_resgatar_corte_gratis(self):
         """Verifica se o cliente pode resgatar o benefício."""
