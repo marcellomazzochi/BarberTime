@@ -12,29 +12,28 @@ def criar_fidelidade(**kwargs):
         "id": 1,
         "cliente_id": 100,
         "cortes_concluidos": 10,
-        "possui_no_show": False,
+        "historico_atendimentos": [],
         "cortes_para_gratis": 10,
     }
     dados.update(kwargs)
     return Fidelidade(**dados)
 
-atendimento = Atendimento(
-    id=1,
-    barbeiro=None,
-    servico={"nome": "Corte", "duracao": 30, "preco": 40},
-    data_hora="2026-10-22T10:00:00",
-)
 
-atendimento.marcar_falta()
+def criar_atendimento_com_falta():
+    atendimento = Atendimento(
+        id=1,
+        barbeiro=None,
+        servico={
+            "nome": "Corte",
+            "duracao": 30,
+            "preco": 40,
+        },
+        data_hora="2026-10-22T10:00:00",
+    )
 
-fidelidade = Fidelidade(
-    id=1,
-    cliente_id=100,
-    cortes_concluidos=10,
-    historico_atendimentos=[atendimento],
-)
+    atendimento.marcar_falta()
 
-assert fidelidade.pode_resgatar_corte_gratis() is False
+    return atendimento
 
 
 def test_cliente_pode_resgatar_com_meta_atingida_sem_no_show():
@@ -50,8 +49,13 @@ def test_cliente_nao_pode_resgatar_sem_cortes_suficientes():
 
 
 def test_cliente_com_no_show_nao_pode_resgatar():
-    fidelidade = criar_fidelidade(possui_no_show=True)
+    atendimento = criar_atendimento_com_falta()
 
+    fidelidade = criar_fidelidade(
+        historico_atendimentos=[atendimento]
+    )
+
+    assert fidelidade.possui_no_show is True
     assert fidelidade.pode_resgatar_corte_gratis() is False
 
 
@@ -64,17 +68,22 @@ def test_registrar_corte_concluido_atualiza_progresso():
     assert fidelidade.cortes_restantes == 5
 
 
-def test_registrar_no_show_bloqueia_resgate():
-    fidelidade = criar_fidelidade()
+def test_historico_com_falta_bloqueia_resgate():
+    fidelidade = criar_fidelidade(
+        historico_atendimentos=[
+            criar_atendimento_com_falta()
+        ]
+    )
 
-    fidelidade.registrar_no_show()
-
-    assert fidelidade.possui_no_show is True
     assert fidelidade.pode_resgatar_corte_gratis() is False
 
 
 def test_resgate_rejeita_cliente_com_no_show():
-    fidelidade = criar_fidelidade(possui_no_show=True)
+    fidelidade = criar_fidelidade(
+        historico_atendimentos=[
+            criar_atendimento_com_falta()
+        ]
+    )
 
     with pytest.raises(ValueError, match="no-show"):
         fidelidade.resgatar_corte_gratis()
