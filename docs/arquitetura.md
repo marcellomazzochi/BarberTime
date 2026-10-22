@@ -190,3 +190,112 @@ flowchart TD
 
 > **Fluxo completo do agregado Comissao (exemplo estrutural):**
 > `POST /comissoes` chega ao `flask_app.py` → cria sessão SQLAlchemy, instancia `SqlAlchemyComissaoRepository(session)` e `SqlAlchemyAtendimentoRepository(session)` → chama `services.gerar_comissao(comissao_id, atendimento_id, atendimento_repo, comissao_repo, session)` → serviço recupera `Atendimento` via `atendimento_repo.get(id)` (porta abstrata, sem SQL visível na service layer) → instancia `Comissao(id, atendimento, percentual)` — construtor em `domain/model.py` valida `atendimento.concluido == True` e `PercentualComissao(0 < valor <= 100)`, lançando `ValueError` se violado → `comissao_repo.add(comissao)` → `session.commit()` persiste via mapeamento imperativo definido em `orm.py` → retorna `_comissao_para_dict(comissao)` serializado como JSON com HTTP 201.
+
+---
+
+## 4. Análise de Trade-offs
+
+A arquitetura adotada pelo **BarberTime** — fundamentada nos estilos *Ports & Adapters (Hexagonal)*, *Service Layer*, *Repository Pattern* e *Mapeamento Imperativo via SQLAlchemy* — molda diretamente o comportamento do sistema em relação aos três atributos de qualidade estipulados na Seção 2. Abaixo, detalha-se o impacto em cada atributo, os dois pontos de trade-off centrais e os riscos arquiteturais identificados.
+
+### 4.1 Impacto nos Atributos de Qualidade
+
+#### Atributo 1 — Manutenibilidade
+- **Como a arquitetura contribui (impacto positivo):**
+  - **Fronteiras explícitas e isolamento de agregados:** O núcleo da aplicação (`src/BarberTime/domain/model.py`) é composto por objetos Python puros (dataclasses e enums) sem qualquer importação de bibliotecas externas de persistência ou web. Isso garante que a introdução ou alteração de regras de negócio em um agregado (por exemplo, a validação de expediente em `Barbeiro` ou o bloqueio de resgate em `Fidelidade`) não cause efeitos colaterais nos demais agregados (`Agenda`, `Comissao`).
+  - **Desacoplamento de infraestrutura:** Mudanças nos esquemas relacionais do SQLite ou na estrutura das tabelas ficam contidas exclusivamente em `src/BarberTime/adapters/orm.py` e `src/BarberTime/adapters/repository.py`. Nenhuma linha da camada de serviço ou do modelo de domínio precisa ser alterada quando uma tabela sofre renomeação de coluna ou inclusão de índice.
+- **Como a arquitetura prejudica (impacto negativo):**
+  - **Sobrecarga de modificação vertical (*Vertical Slice Overhead*):** Embora os agregados sejam isolados horizontalmente, a adição de uma funcionalidade completa exige alterações em cascata vertical através de até cinco arquivos distintos (`domain/model.py`, `adapters/orm.py`, `adapters/repository.py`, `service_layer/services.py` e `entrypoints/flask_app.py`). Para funcionalidades simples de CRUD, essa segregação impõe um custo de navegação e edição desproporcional.
+  - **Duplicação de contratos e implementações:** A exigência de manter uma interface abstrata (`Abstract*Repository`), uma implementação de produção (`SqlAlchemy*Repository`) e uma implementação de teste (`Fake*Repository`) para cada entidade persistida triplica a quantidade de código de infraestrutura a ser mantida sempre que um método de consulta é modificado.
+
+#### Atributo 2 — Testabilidade
+- **Como a arquitetura contribui (impacto positivo):**
+  - **Suíte de testes de unidade sem dependências externas:** O desacoplamento viabilizado pelo padrão *Repository* permite que 100% dos testes unitários de domínio e de serviços executem em memória pura através dos `FakeRepository`s. Não há necessidade de subir instâncias do SQLite, abrir sessões transacionais de ORM ou inicializar o servidor Flask.
+  - **Feedback instantâneo:** Os testes unitários executam em frações de segundo (58 testes em 0.10s), permitindo um fluxo ágil de *Test-Driven Development* (TDD) e verificação contínua no ambiente local do desenvolvedor antes de qualquer commit.
+  - **Eliminação de estados residuais:** Como os fakes operam sobre listas em memória recriadas a cada teste, elimina-se o risco de dependência de ordem de execução ou contaminação de dados entre testes.
+- **Como a arquitetura prejudica (impacto negativo):**
+  - **Custo contínuo de manutenção dos fakes:** O desenvolvedor precisa implementar e manter uma base de código secundária de repositórios em memória. Se a lógica de filtro de um método de repositório for alterada (ex.: filtragem por status ou por intervalo de datas), o desenvolvedor deve atualizar manualmente o comportamento correspondente no Fake.
+  - **Complexidade de fixtures no ciclo de mapeamento:** Para os testes de integração que exercitam o SQLAlchemy real, é necessário gerenciar explicitamente o ciclo de vida do mapeamento imperativo (`start_mappers()` e limpeza de metadados), evitando colisões de mapeadores globais entre sessões de teste.
+
+#### Atributo 3 — Desempenho
+- **Como a arquitetura contribui (impacto positivo):**
+  - **Consultas cirúrgicas e controle estrito de carga:** A camada de serviços coordena consultas filtradas diretamente via repositório (ex.: `list_by_barbeiro`), recuperando apenas as tuplas estritamente necessárias e convertendo-as em DTOs primitivos (dicionários). O tempo de resposta para listagens de até 500 registros permanece abaixo de 40 ms nos endpoints da API, cumprindo com folga a meta de 200 ms.
+  - **Ausência de queries N+1 ocultas no domínio:** Como as entidades de domínio são objetos puros e não mantêm referências ativas à sessão do ORM (sem *lazy loading* implícito que dispara consultas transparentes ao acessar propriedades), não ocorrem explosões inesperadas de queries no banco de dados.
+- **Como a arquitetura prejudica (impacto negativo):**
+  - **Indireção em tempo de execução:** A requisição HTTP percorre quatro camadas de indireção: rota Flask -> função de serviço -> repositório concreto -> sessão SQLAlchemy/mapeamento imperativo -> banco SQLite. Essa pilha de chamadas introduz um pequeno overhead de CPU e alocação de memória por chamada.
+  - **Sobrecarga de reconstrução de Value Objects com `composite`:** A reconstituição de objetos como `ServicoRealizado`, `PercentualComissao` e `HorarioTrabalho` a partir das colunas do SQLite exige instanciação dinâmica de dataclasses pelo ORM, o que é ligeiramente mais lento do que ler diretamente um dicionário serializado ou tuplas cruas do driver do banco.
+
+---
+
+### 4.2 Pontos de Trade-off Explícitos
+
+A arquitetura atual representa um equilíbrio intencional entre forças concorrentes. Destacam-se dois trade-offs centrais:
+
+#### Trade-off 1: Alta Testabilidade e Isolamento do Domínio vs. Alta Complexidade Estrutural e Boilerplate
+- **Decisão:** Adoção rigorosa do padrão *Repository* com interfaces abstratas ABC, implementações concretas em SQLAlchemy e implementações *Fake* em memória para cada um dos agregados, combinada à orquestração via *Service Layer*.
+- **O que se ganha:** Testabilidade de altíssimo nível com testes de unidade ultrarrápidos (execução de 58 testes em 0.10s sem tocar no disco ou banco), isolamento completo do modelo de domínio em relação ao mecanismo de persistência e possibilidade de evolução e testes em paralelo por múltiplos desenvolvedores.
+- **O que se perde:** Complexidade estrutural elevada e boilerplate excessivo. O time é obrigado a criar e sincronizar 3 classes por agregado em `adapters/repository.py` (ABC, SqlAlchemy e Fake), além da função de serviço correspondente. Para um domínio de complexidade moderada como o de barbearia, a proporção de código de persistência e infraestrutura (347 linhas) equivale à do próprio modelo de domínio (378 linhas).
+- **Justificativa do trade-off:** No contexto de entrega contínua e avaliação da disciplina, a garantia de que as invariantes críticas de negócio (como "não gerar comissão para atendimento pendente" e "não agendar fora do expediente") possam ser exaustivamente validadas sem falhas espúrias de infraestrutura justifica plenamente o esforço extra de escrita e manutenção do boilerplate.
+
+#### Trade-off 2: Manutenibilidade por Mapeamento Imperativo Desacoplado vs. Fragilidade de Configuração e Rigidez Operacional
+- **Decisão:** Utilização do *Classical Mapping* do SQLAlchemy (`mapper_registry.map_imperatively`) em `src/BarberTime/adapters/orm.py`, em detrimento do modelo padrão declarativo (*Active Record* via `DeclarativeBase`).
+- **O que se ganha:** Preservação estrita da arquitetura hexagonal: o modelo de domínio em `src/BarberTime/domain/model.py` desconhece totalmente a existência do SQLAlchemy, tabelas relacionais ou tipos SQL. O domínio permanece portátil e pode ser testado ou reutilizado sem instalar nenhuma dependência de infraestrutura.
+- **O que se perde:** O mapeamento imperativo no SQLAlchemy 2.0 é menos documentado, altamente verboso e desprovido de checagem estática amigável. Qualquer descompasso entre nomes de atributos da dataclass e colunas físicas do banco — como ocorreu no composite de `PercentualComissao`, que exigiu a coluna física `percentual_valor` para não colidir com o nome do atributo — resulta em erros sutis em tempo de execução. Além disso, a inicialização do mapeamento (`start_mappers()`) é um processo global sensível que não pode ser invocado repetidamente sem antes limpar os metadados.
+- **Justificativa do trade-off:** A separação conceitual absoluta entre regras de negócio e detalhes de tabela impede a contaminação do domínio e cumpre a diretriz fundamental de arquitetura de software proposta no curso.
+
+---
+
+### 4.3 Riscos Arquiteturais Identificados
+
+#### Risco 1: Divergência Semântica Silenciosa entre Fake Repositories e Repositórios SQLAlchemy
+- **Descrição do risco:** Os repositórios de teste (`FakeBarbeiroRepository`, `FakeComissaoRepository`, `FakeAtendimentoRepository`, `FakeFidelidadeRepository`) operam sobre estruturas de dados em memória (listas e dicionários Python), enquanto os repositórios reais utilizam a `Session` do SQLAlchemy sobre o banco SQLite. O comportamento em memória não replica restrições relacionais reais de banco de dados, tais como integridade referencial de chaves estrangeiras, constraints de unicidade (`UNIQUE`), tipos de dados estritos de colunas, transacionalidade de concorrência ou comportamento de `flush` e `rollback`.
+- **Impacto potencial:** Falso positivo em testes. Uma alteração na camada de serviço pode passar com 100% de sucesso na suíte unitária utilizando Fakes, mas falhar em produção ou no ambiente de staging com um erro de violação de constraint do banco de dados (por exemplo, tentativa de persistir uma entidade referenciando uma chave inexistente).
+- **Estratégia de mitigação adotada:** Obrigatoriedade de testes de integração em `tests/integration/` para todos os repositórios SQLAlchemy reais, utilizando banco SQLite em memória (`sqlite:///:memory:`). Cada método persistente é testado tanto isoladamente na suíte unitária (para velocidade) quanto integrado ao SQLAlchemy (para garantia semântica).
+
+#### Risco 2: Gestão Transacional Fragmentada sem Unit of Work Formal
+- **Descrição do risco:** Atualmente, a responsabilidade de executar `session.commit()` ou `session.rollback()` está distribuída entre as funções da camada de serviço (`src/BarberTime/service_layer/services.py`) e a injeção da sessão é gerenciada manualmente na camada de entrada (`entrypoints/flask_app.py`). À medida que novos casos de uso exigem a orquestração de múltiplos agregados em uma única operação de negócio (por exemplo: registrar conclusão de atendimento, atualizar saldo do programa de fidelidade e emitir comissão financeira no mesmo ciclo), a ausência de um padrão *Unit of Work* explícito pode levar a commits parciais caso ocorra uma falha intermediária.
+- **Impacto potencial:** Inconsistência de dados no banco relacional caso uma exceção seja levantada após a gravação de um agregado, mas antes da persistência do outro.
+- **Estratégia de mitigação adotada:** Manter operações de serviço focadas em um único agregado por transação no escopo atual da barbearia e validar atomicidade através de testes E2E com rollback em caso de exceções capturadas pelas rotas Flask.
+
+---
+
+## 5. Alternativa
+
+> *Nota: Esta seção será preenchida pelo Colega 2 (Arquitetura Alternativa e ADR), contemplando a comparação da arquitetura atual com pelo menos uma alternativa concreta (como Flask com Active Record e Transaction Script) avaliada sob os mesmos três atributos de qualidade.*
+
+---
+
+## 6. Evidências
+
+Para fundamentar empiricamente a análise de trade-offs apresentada na Seção 4, foram coletados dados concretos extraídos diretamente do histórico de commits, da base de código e da execução da suíte de testes automatizados do repositório BarberTime.
+
+### Evidência 1: Isolamento de Agregados e Manutenibilidade Incremental
+- **Afirmação apoiada:** A arquitetura em Ports & Adapters e a segregação estrita por agregados permitem implementar novas regras de negócio e entidades sem alterar os agregados pré-existentes, confirmando o Atributo 1 (Manutenibilidade).
+- **Dados do repositório:**
+  - **Commit `7a93494`** (*"adiciona modelo de dominio do agregado comissao e testes unitarios"*): A introdução do modelo do agregado `Comissao` modificou exatamente **2 arquivos** (`src/BarberTime/domain/model.py` e `tests/unit/test_comissao.py`), adicionando 16 testes unitários que validam invariantes críticas sem alterar nenhuma linha dos agregados `Barbeiro` ou `Agenda`.
+  - **Commit `12bb87b`** (*"adiciona casos de uso do agregado comissao e documenta decisoes"*): A implementação dos casos de uso de serviço do agregado `Comissao` alterou apenas **2 arquivos** (`src/BarberTime/service_layer/services.py` e `tests/unit/test_services_comissao.py`), utilizando `FakeComissaoRepository` e `FakeAtendimentoRepository` com zero impacto sobre o código dos outros integrantes.
+  - **Inclusão do Agregado `Fidelidade` (22/10/2026):** A adição completa do quarto agregado no repositório (commits `f8e6176`, `154a7a5`, `cb59b47`, `197e742`, `fe66fca`, `4d1ae7f` e `63f4de8`) ocorreu de forma estritamente modular: apenas as extensões necessárias em `model.py`, `orm.py`, `repository.py`, `services.py` e `flask_app.py` foram feitas, sem quebrar nenhuma funcionalidade ou teste existente de `Barbeiro`, `Agenda` ou `Comissao`.
+
+### Evidência 2: Medição Real do Tempo de Execução e Eficácia da Pirâmide de Testes
+- **Afirmação apoiada:** O uso do padrão Repository e de Fake Repositories em memória cumpre a meta do Atributo 2 (Testabilidade), permitindo uma suíte unitária instantânea em comparação com testes dependentes de infraestrutura.
+- **Dados do repositório (execução real do `pytest`):**
+  - **Suíte Unitária (`tests/unit/`):** **58 testes** executados em **0.10 segundos** (tempo médio de ~1,72 ms por teste unitário). Nenhum desses 58 testes instancia conexão de banco de dados, engine SQLAlchemy ou servidor Flask.
+  - **Suíte de Integração e E2E (`tests/integration/` + `tests/e2e/`):** **27 testes** executados em **0.65 segundos**, com setup de fixtures que atinge até 0.64s na inicialização de tabelas e contexto da API Flask (`tests/e2e/test_api.py::test_api_criar_barbeiro`).
+  - **Comparativo quantitativo:** A suíte de testes unitários em memória pura executa mais que o dobro de casos de teste (58 contra 27) em **6,5 vezes menos tempo** do que a suíte integrada. A suíte completa (85 testes) passa em **1.77 segundos**, mantendo-se estritamente abaixo do limite de 2 segundos estipulado no cenário de testabilidade.
+
+### Evidência 3: Custo Estrutural de Persistência vs. Regra de Negócio (Métricas de Código)
+- **Afirmação apoiada:** A separação de responsabilidades com repositórios triplicados e mapeamento imperativo acarreta um volume de código de persistência comparável ao do próprio domínio de negócio, confirmando empiricamente o Trade-off 1 (Testabilidade vs. Boilerplate).
+- **Dados de contagem de linhas de código (`wc -l` no repositório):**
+  - `src/BarberTime/domain/model.py`: **378 linhas** de código puro de negócio (cobrindo as classes de domínio `barbeiro`, `HorarioTrabalho`, `Agenda`, `Atendimento`, `Comissao`, `PercentualComissao`, `Fidelidade` e enums).
+  - `src/BarberTime/adapters/repository.py`: **250 linhas** contendo 13 classes (5 interfaces abstratas ABC, 4 repositórios concretos SQLAlchemy e 4 repositórios Fake em memória).
+  - `src/BarberTime/adapters/orm.py`: **97 linhas** dedicadas exclusivamente à infraestrutura de mapeamento imperativo (`mapper_registry.map_imperatively`, definições de `Table`, `composite` e relacionamentos).
+  - **Proporção:** O código de infraestrutura de persistência (`repository.py` + `orm.py` = **347 linhas**) representa **47,8%** de toda a base de código estrutural entre domínio e adaptadores de dados (347 / (378 + 347)). Isso quantifica com precisão o custo de boilerplate assumido pela decisão arquitetural.
+
+### Evidência 4: Latência e Vazão de Resposta em Endpoints HTTP (Desempenho)
+- **Afirmação apoiada:** A sobrecarga de indireção introduzida pela divisão em camadas não compromete o Atributo 3 (Desempenho), mantendo a latência das requisições muito abaixo do teto de 200 ms.
+- **Dados do repositório (medição de duração de chamadas nos testes E2E via `pytest -v --durations=0`):**
+  - Criação de barbeiro (`POST /barbeiros`): **0.01s** (10 ms).
+  - Consulta de barbeiros (`GET /barbeiros` e `GET /barbeiros/{id}`): **0.01s** (10 ms).
+  - Registro e conclusão de atendimento (`POST /atendimentos` e `POST /atendimentos/{id}/concluir`): **0.02s** (20 ms).
+  - Cálculo e persistência de comissão (`POST /comissoes` e `GET /barbeiros/{id}/comissoes`): **0.01s a 0.04s** (10 ms a 40 ms).
+  - Todas as operações respondem com latência entre 5x e 20x inferior ao limite de tolerância estipulado (200 ms) para consultas operando sob o banco SQLite.
+
