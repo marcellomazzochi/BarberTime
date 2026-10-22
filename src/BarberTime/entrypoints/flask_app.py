@@ -21,6 +21,9 @@ def get_atendimento_repo(session):
 
 def get_comissao_repo(session):
     return repository.SqlAlchemyComissaoRepository(session)
+    
+def get_fidelidade_repo(session):
+    return repository.SqlAlchemyFidelidadeRepository(session)
 
 @app.route("/barbeiros", methods=["POST"])
 def post_barbeiro():
@@ -216,6 +219,137 @@ def get_comissoes_do_barbeiro(barbeiro_id):
             barbeiro_id=barbeiro_id, repo=comissao_repo
         )
         return jsonify(resultado), 200
+    finally:
+        session.close()
+
+
+@app.route("/fidelidades", methods=["POST"])
+def post_fidelidade():
+    session = get_session()
+    repo = get_fidelidade_repo(session)
+    data = request.get_json() or {}
+
+    try:
+        resultado = services.cadastrar_fidelidade(
+            id=data["id"],
+            cliente_id=data["cliente_id"],
+            cortes_para_gratis=data.get("cortes_para_gratis", 10),
+            fidelidade_repo=repo,
+            session=session,
+        )
+        return jsonify(resultado), 201
+    except KeyError as e:
+        return jsonify({
+            "erro": f"Campo obrigatorio ausente: {e.args[0]}"
+        }), 400
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    finally:
+        session.close()
+
+
+@app.route("/fidelidades", methods=["GET"])
+def get_fidelidades():
+    session = get_session()
+    repo = get_fidelidade_repo(session)
+
+    try:
+        resultado = services.listar_fidelidades(repo)
+        return jsonify(resultado), 200
+    finally:
+        session.close()
+
+
+@app.route("/fidelidades/<int:fidelidade_id>", methods=["GET"])
+def get_fidelidade(fidelidade_id):
+    session = get_session()
+    repo = get_fidelidade_repo(session)
+
+    try:
+        resultado = services.consultar_fidelidade(
+            fidelidade_id=fidelidade_id,
+            fidelidade_repo=repo,
+        )
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 404
+    finally:
+        session.close()
+
+
+@app.route("/clientes/<int:cliente_id>/fidelidade", methods=["GET"])
+def get_fidelidade_cliente(cliente_id):
+    session = get_session()
+    repo = get_fidelidade_repo(session)
+
+    try:
+        resultado = services.consultar_fidelidade_por_cliente(
+            cliente_id=cliente_id,
+            fidelidade_repo=repo,
+        )
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 404
+    finally:
+        session.close()
+
+
+@app.route("/fidelidades/<int:fidelidade_id>/cortes", methods=["POST"])
+def post_corte_fidelidade(fidelidade_id):
+    session = get_session()
+    repo = get_fidelidade_repo(session)
+
+    try:
+        resultado = services.registrar_corte_fidelidade(
+            fidelidade_id=fidelidade_id,
+            fidelidade_repo=repo,
+            session=session,
+        )
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    finally:
+        session.close()
+
+
+@app.route(
+    "/fidelidades/<int:fidelidade_id>/no-show",
+    methods=["POST"],
+)
+def post_no_show_fidelidade(fidelidade_id):
+    session = get_session()
+    repo = get_fidelidade_repo(session)
+
+    try:
+        resultado = services.registrar_no_show_fidelidade(
+            fidelidade_id=fidelidade_id,
+            fidelidade_repo=repo,
+            session=session,
+        )
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    finally:
+        session.close()
+
+
+@app.route(
+    "/fidelidades/<int:fidelidade_id>/resgatar",
+    methods=["POST"],
+)
+def post_resgatar_corte_gratis(fidelidade_id):
+    session = get_session()
+    repo = get_fidelidade_repo(session)
+
+    try:
+        resultado = services.resgatar_corte_gratis(
+            fidelidade_id=fidelidade_id,
+            fidelidade_repo=repo,
+            session=session,
+        )
+        return jsonify(resultado), 200
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
     finally:
         session.close()
 
