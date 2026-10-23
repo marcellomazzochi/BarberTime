@@ -276,32 +276,43 @@ A arquitetura atual representa um equilíbrio intencional entre forças concorre
 
 ### 5.1 Alternativa considerada: Flask com Active Record e Transaction Script
 
-A alternativa considerada consiste em manter o Flask como framework HTTP e o SQLAlchemy como ORM, mas substituir a separação explícita entre domínio, repositórios e camada de serviço por uma estrutura mais simples.
+A alternativa avaliada mantém Flask como framework HTTP e SQLAlchemy como ORM, mas substitui a separação explícita entre domínio, repositórios e camada de serviço por uma organização baseada nos padrões Active Record e Transaction Script.
 
-Nesse modelo, as classes de negócio seriam associadas diretamente à persistência por meio do padrão Active Record. Cada entidade poderia consultar, inserir e atualizar seus próprios registros. Os casos de uso seriam implementados como funções procedurais no padrão Transaction Script, em que cada função concentra o fluxo de uma operação, incluindo validações, consultas e alterações no banco.
+No padrão Active Record, as entidades ficam diretamente associadas à persistência e podem concentrar operações de consulta e atualização. No padrão Transaction Script, cada caso de uso é implementado como uma função que coordena validações, consultas, regras e gravações necessárias para executar uma operação.
 
-Por exemplo, o caso de uso de geração de comissão poderia ser implementado em uma única função que recupera o atendimento, verifica seu status, calcula o valor e persiste a comissão. A rota Flask chamaria essa função e devolveria a resposta HTTP.
+Por exemplo, a geração de comissão poderia ser implementada em uma função que recupera o atendimento, verifica seu status, calcula a comissão e persiste o resultado. A rota Flask chamaria essa função e devolveria a resposta HTTP.
 
-Essa abordagem reduziria a quantidade de arquivos e abstrações, mas aproximaria as regras de negócio dos detalhes de persistência.
+Essa alternativa tende a reduzir a quantidade inicial de abstrações e facilitar operações simples. Em contrapartida, aproxima as regras de negócio da persistência e pode dificultar o isolamento dos testes e a evolução independente das partes do sistema.
+
+A comparação a seguir considera as mesmas tecnologias e os mesmos cenários de qualidade definidos na Seção 2. A alternativa é uma proposta arquitetural, não uma implementação submetida a medições equivalentes.
 
 ### 5.2 Comparação pelos atributos de qualidade
 
-| Atributo de qualidade | Arquitetura atual: Ports & Adapters, Repository e Service Layer                                                                                                                                                                                           | Alternativa: Active Record e Transaction Script                                                                                                                                                                                                                                                       |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Manutenibilidade**  | Favorece a evolução independente do domínio, dos repositórios e dos serviços. Novas funcionalidades podem exigir alterações em vários arquivos e a manutenção de interfaces, implementações SQLAlchemy e fakes.                                           | Reduz a quantidade de classes, interfaces e arquivos envolvidos em operações simples. Entretanto, mudanças na persistência podem afetar diretamente as entidades e os casos de uso, aumentando o acoplamento conforme as regras crescem.                                                              |
-| **Testabilidade**     | Permite testar regras de negócio e serviços com Fake Repositories, sem inicializar o banco ou o Flask. Também possibilita testes de integração separados para validar o ORM real. O custo é manter os fakes consistentes com os repositórios de produção. | As funções de caso de uso podem ser testadas diretamente, mas o acoplamento entre entidades e persistência pode exigir banco de dados ou mecanismos adicionais de isolamento. Testes unitários independentes da infraestrutura tornam-se mais difíceis quando as regras dependem diretamente do ORM.  |
-| **Desempenho**        | A requisição percorre rota, serviço, repositório, ORM e banco. Essa separação introduz alguma indireção, embora consultas específicas nos repositórios permitam controlar os dados recuperados.                                                           | A menor quantidade de camadas pode reduzir parte da sobrecarga de chamadas e simplificar operações simples. Contudo, o desempenho real continua dependendo das consultas SQL, dos índices, do volume de dados e da serialização; a redução de camadas não garante, por si só, respostas mais rápidas. |
+| Atributo e critério quantitativo | Arquitetura atual: Ports & Adapters, Repository e Service Layer | Alternativa: Active Record e Transaction Script |
+|---|---|---|
+| **Manutenibilidade:** implementar o agregado Fidelidade em até 4 arquivos, com até 4 horas-desenvolvedor e sem regressões nos testes existentes. | A separação entre domínio, serviços e repositórios facilita isolar as regras de negócio, mas pode exigir alterações coordenadas em diferentes arquivos e implementações de repositório. O atendimento à meta depende da organização atual do código e da complexidade da funcionalidade. | A redução de abstrações pode diminuir o número inicial de arquivos e acelerar operações simples. Entretanto, a mistura entre regras e persistência pode aumentar o esforço de mudanças futuras. A meta de arquivos e tempo também precisa ser verificada na implementação. |
+| **Testabilidade:** executar 100% dos testes unitários em menos de 2 segundos, sem banco de dados, sessão SQLAlchemy ou Flask. | Os Fake Repositories permitem testar os serviços sem infraestrutura externa, favorecendo o isolamento das regras. A manutenção dos fakes e dos contratos dos repositórios gera um custo adicional. A meta deve ser validada pela execução completa da suíte unitária. | Os Transaction Scripts podem ser testados diretamente, mas o acesso à persistência por meio das entidades pode exigir mecanismos adicionais de isolamento. É possível atingir a meta com dependências bem controladas, embora isso possa reduzir parte da simplicidade inicialmente pretendida. |
+| **Desempenho:** responder a `GET /barbeiros/{id}/comissoes` em menos de 200 ms para até 500 comissões, sem erros. | A separação entre rota, serviço e repositório introduz indireção, mas permite centralizar consultas e controlar os dados recuperados. A sobrecarga efetiva depende da implementação e do acesso ao banco. | A redução de camadas pode diminuir parte da sobrecarga de chamadas. Entretanto, consultas ineficientes, carregamento excessivo de entidades ou serialização inadequada podem anular esse ganho. A alternativa não pode ser considerada mais rápida sem medições. |
 
-### 5.3 Conclusão da comparação
+### 5.3 Avaliação dos critérios
 
-Para o BarberTime, considero mais adequada a arquitetura atual, mesmo com a quantidade adicional de código. O sistema possui regras de negócio que precisam ser protegidas, como impedir a geração de comissão para um atendimento não concluído e validar os horários de trabalho dos barbeiros. Manter essas regras no domínio e separar a persistência facilita testar cada comportamento isoladamente.
+Para que a comparação seja verificável, cada atributo deve ser avaliado por seu cenário correspondente:
 
-A alternativa com Active Record e Transaction Script seria razoável para uma aplicação pequena, com poucas regras e operações predominantemente CRUD. Ela reduziria o trabalho inicial e deixaria alguns fluxos mais diretos. Porém, no BarberTime, o ganho de simplicidade poderia trazer mais acoplamento e dificultar a evolução das regras.
+- **Manutenibilidade:** registrar os arquivos alterados e o tempo efetivo de implementação do agregado Fidelidade. Verificar se foram respeitados o limite de quatro arquivos, o limite de quatro horas-desenvolvedor e a ausência de regressões.
+- **Testabilidade:** executar a suíte unitária completa, medir seu tempo e confirmar que ela não depende de banco de dados, sessão SQLAlchemy ou servidor Flask. A meta é atingir 100% dos testes unitários em menos de dois segundos.
+- **Desempenho:** executar requisições equivalentes a `GET /barbeiros/{id}/comissoes`, com até 500 comissões, e verificar o tempo de resposta e a ocorrência de erros. As duas arquiteturas devem utilizar condições comparáveis de dados, ambiente e configuração.
 
-Também não considero possível afirmar que a arquitetura atual é mais rápida sem realizar medições equivalentes nas duas implementações. A escolha prioriza manutenibilidade e testabilidade, enquanto o desempenho deve continuar sendo acompanhado por testes e medições reais.
+Os resultados devem ser registrados como evidências observadas. Quando a alternativa não tiver sido implementada e medida, sua avaliação deve permanecer qualitativa, sem atribuir tempos de resposta ou ganhos quantitativos hipotéticos.
 
-Portanto, manteria Ports & Adapters, Repository e Service Layer como estrutura principal, aceitando o custo adicional de abstrações em troca de maior isolamento das regras de negócio e de testes mais independentes.
+### 5.4 Conclusão da comparação
 
+A arquitetura atual é a escolha mais adequada para o BarberTime porque favorece a separação entre regras de negócio, persistência e interface HTTP. Essa organização facilita testar os serviços com Fake Repositories e evoluir as funcionalidades sem vincular diretamente o domínio ao SQLAlchemy.
+
+A alternativa com Active Record e Transaction Script apresenta vantagens em simplicidade inicial e quantidade de abstrações, podendo ser apropriada para aplicações menores e com poucas regras de negócio. Contudo, sua adoção no BarberTime exigiria avaliar o impacto do acoplamento entre domínio e persistência, principalmente à medida que as regras de agendamento, comissão e fidelidade se tornam mais complexas.
+
+A escolha da arquitetura atual não significa que ela seja automaticamente superior nos três atributos. O cumprimento das metas quantitativas depende da implementação real e deve ser confirmado por testes e medições. A decisão prioriza a manutenibilidade e a testabilidade, sem deixar de exigir que o endpoint de comissões atenda ao limite de desempenho estabelecido na Seção 2.
+
+Assim, recomenda-se manter Ports & Adapters, Repository e Service Layer, acompanhando os critérios de qualidade por meio de verificações reproduzíveis e registradas no projeto.
 
 ---
 
