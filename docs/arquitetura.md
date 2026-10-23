@@ -126,9 +126,15 @@ flowchart TD
         DOM_COM["Comissao\nAgregado"]
         DOM_ATD["Atendimento"]
         DOM_BAR["barbeiro"]
+        DOM_AGENDA["Agenda\nregra de colisão de horário"]
+        DOM_AGENDAMENTO["Agendamento"]
         DOM_VO1["PercentualComissao\nValue Object - frozen dataclass"]
         DOM_VO2["ServicoRealizado\nValue Object - frozen dataclass"]
         DOM_ENUM["StatusAtendimento\nEnum"]
+    end
+
+    subgraph TESTS["tests/unit/test_domain.py"]
+        TEST_AGENDA["teste_agendar_cliente()\nteste_agendar_mesmo_horario()"]
     end
 
     subgraph DB["barbertime.db"]
@@ -168,6 +174,8 @@ flowchart TD
     DOM_ATD --> DOM_VO2
     DOM_ATD --> DOM_ENUM
     DOM_ATD --> DOM_BAR
+    DOM_AGENDA -->|"armazena"| DOM_AGENDAMENTO
+    TEST_AGENDA -->|"testa inclusão e colisão"| DOM_AGENDA
 
     style DOMAIN fill:#d4edda,stroke:#28a745,color:#000
     style SERVICE fill:#cce5ff,stroke:#004085,color:#000
@@ -176,6 +184,7 @@ flowchart TD
     style DB fill:#e2e3e5,stroke:#383d41,color:#000
     style REPO_FAKE_C stroke-dasharray: 5 5
 ```
+O agregado `Agenda` e a entidade `Agendamento` estão implementados no domínio e cobertos diretamente por testes unitários. No estado atual do código, a Agenda não possui repositório
 
 #### Legenda da Direção de Dependências
 
