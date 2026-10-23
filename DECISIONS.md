@@ -162,6 +162,59 @@ cf5d00c update agendamento,
 
 
 
+### Integrante: Johnny de Godoy (`johnn2c`)
+
+## Fase 1 — Proposta inicial
+
+**Data registrada:** 27/09/2026  
+**Período estimado de elaboração:** semana de 21 a 27/09/2026.
+
+**Atividade:** elaboração e atualização da proposta inicial do projeto BarberTime.
+
+**Arquivo principal:**
+- `PROPOSTA.md`
+
+**Commit:**
+- `e7d3178` — Update PROPOSTA.md
+
+**Descrição:** participei da elaboração da proposta inicial do BarberTime, contribuindo para a documentação que orienta o desenvolvimento do sistema.
+
+
+**checkpoint 2**
+
+-**Período estimado de desenvolvimento:** 21 a 22/10/2026.
+
+**Responsabilidade:** implementação do agregado `Fidelidade`, incluindo regras de domínio, testes, persistência, repositórios, serviços e rotas.
+
+### Atividades realizadas
+
+- Criei e ajustei o agregado `Fidelidade`, estruturando as regras de negócio relacionadas à fidelidade dos clientes.
+- Desenvolvi testes unitários para verificar o comportamento do agregado e suas regras.
+- Refatorei os casos de teste para melhorar a organização e a validação do comportamento esperado.
+- Implementei a tabela de fidelidade e os repositórios necessários para a persistência dos dados.
+- Desenvolvi funções na camada de serviços para executar os casos de uso relacionados à fidelidade.
+- Implementei o registro de `no_show` na classe `Fidelidade`.
+- Desenvolvi um teste de integração para verificar o funcionamento conjunto dos componentes.
+- Adicionei as rotas de fidelidade para disponibilizar as funcionalidades por meio da aplicação.
+- Realizei ajustes para compatibilizar a implementação com os testes do projeto.
+
+### Commits relacionados
+
+- `a3a3e42` — adicionado agregado de fidelidade
+- `154a7a5` — feat: criados testes unitários de fidelidade
+- `f8e6176` — adicionado agregado de fidelidade
+- `5a0074a` — adicionado atendimento aos testes de fidelidade
+- `cb59b47` — adiciona tabela de fidelidade
+- `197742` — adicionados repositórios de fidelidade
+- `fe6fca` — adicionado teste de integração de fidelidade
+- `448f543` — adicionado registrar_no_show na classe fidelidade
+- `4d13e7f` — adicionadas funções de fidelidade
+- `63f4de8` — adicionadas rotas de fidelidade
+
+### Decisão técnica
+
+A implementação da fidelidade foi organizada em componentes de domínio, persistência, serviços e rotas, mantendo as responsabilidades separadas. Os testes unitários foram utilizados para validar as regras do agregado, enquanto o teste de integração foi adicionado para verificar a interação entre componentes.
+
 
 ---
 
@@ -224,3 +277,48 @@ Mantive no diagrama a Agenda como parte do domínio, sem ligar no repositório o
 
 **Uso de IA:**
 Usei IA para consultar o código dos colegas, levantar os pontos importantes para o ADR e ajustar o diagrama em `arquitetura.md`
+
+
+---
+## Integrante Johnny de Godoy (`johnn2c`)
+
+### Fase 2 — Documentação e análise arquitetural
+
+
+**Data dos commits:** 22/10/2026  
+**Período estimado:** 22/10/2026.
+
+### Atividades realizadas
+
+- Atualizei `docs/arquitetura.md` para registrar a análise arquitetural.
+- Adicionei a Seção 5, comparando a arquitetura adotada com a alternativa Active Record + Transaction Script.
+- Comparei as abordagens pelos atributos de manutenibilidade, testabilidade e desempenho.
+- Registrei a conclusão de manter a arquitetura atual, considerando os padrões exigidos no projeto.
+- Documentei a decisão relacionada ao isolamento dos testes unitários por meio de um ADR.
+- Ajustei o identificador do ADR para manter a documentação consistente.
+
+### Arquivos relacionados
+
+- `docs/arquitetura.md`
+- `docs/adr/` — ADR de isolamento dos testes unitários e arquivo com identificador atualizado.
+
+### Commits relacionados
+
+- `f6cfde` — Adicionada seção 5
+- `64ca6bb` — atualização arquitetura
+- `54b2ac6` — adicionado ADR de isolamento dos testes unitários
+- `7c30b43` — alterado identificador do ADR
+
+### Decisão técnica
+
+A análise comparativa considera a arquitetura atual baseada em Ports & Adapters, Repository e Service Layer e a alternativa Active Record + Transaction Script. A recomendação é manter os padrões atuais, considerando a separação das responsabilidades e a testabilidade. A alternativa foi analisada documentalmente, não implementada como substituição da arquitetura do projeto.
+
+### Uso de IA generativa
+
+Utilizei o ChatGPT como ferramenta de apoio para compreender os requisitos da atividade,  revisar a documentação e organizar as justificativas técnicas. As sugestões foram usadas apenas como apoio.
+
+### Observação sobre o histórico
+
+As datas foram organizadas a partir do histórico de commits disponível. Os períodos identificados como estimados representam aproximações do período de trabalho, e não necessariamente o horário ou o dia em que cada atividade foi iniciada.
+
+
