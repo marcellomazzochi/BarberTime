@@ -205,3 +205,22 @@ Decidi documentar a adoção do mapeamento imperativo (`map_imperatively`) no AD
 
 **Uso de IA:**
 Usei IA pontualmente para tirar dúvidas sobre a formatação dos cenários de atributos de qualidade em Markdown e revisar a concordância dos textos de trade-offs e do ADR. Todo o raciocínio, dados da suíte de testes e argumentos técnicos foram feitos com base no código do nosso projeto.
+
+---
+
+### Marcello Bimbatti Mazzochi (`marcellomazzochi`) — Fase 2 Checkpoint 1
+
+**O que fiz e arquivos:**
+Documentei a decisão do agregado Agenda em ADR 0003 e atualizei o diagrama da arquitetura para mostrar a Agenda e seus testes.
+- `docs/adr/0003-agenda-impede-conflitos-de-horario.md`
+- `docs/arquitetura.md`
+
+**Commits:** 
+927e12ebc13940fc147e5f2fe98a6db7a23f0a7e e 353c95a2f4cd6a80d1c764e496958eb995b968ba - Criação ADR 0003
+ddde18bfe187b59e3053b037e679e1d2974be0e4 - Update arquivo arquitetura
+
+**Decisão de projeto:**
+Mantive no diagrama a Agenda como parte do domínio, sem ligar no repositório ou banco, porque a implementação atual guarda os agendamentos em memória.
+
+**Uso de IA:**
+Usei IA para consultar o código dos colegas, levantar os pontos importantes para o ADR e ajustar o diagrama em `arquitetura.md`
