@@ -182,8 +182,6 @@ cf5d00c update agendamento,
 
 **checkpoint 2**
 
--**Período estimado de desenvolvimento:** 21 a 22/10/2026.
-
 **Responsabilidade:** implementação do agregado `Fidelidade`, incluindo regras de domínio, testes, persistência, repositórios, serviços e rotas.
 
 ### Atividades realizadas
