@@ -1,3 +1,5 @@
+from __future__ import annotations
+import abc
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 
@@ -236,8 +238,65 @@ class Atendimento:
         return hash(self.id)
 
 
+# ---------------------------------------------------------------------------
+# OCP — Strategy de Calculo de Comissao
+# ---------------------------------------------------------------------------
+class EstrategiaComissao(abc.ABC):
+    """Interface (Strategy) para calcular o valor da comissao."""
+
+    @abc.abstractmethod
+    def calcular(self, preco_servico: float) -> float:
+        raise NotImplementedError
+
+
+class ComissaoPercentualFixo(EstrategiaComissao):
+    """Estrategia padrao: percentual fixo sobre o preco do servico."""
+
+    def __init__(self, percentual: float | PercentualComissao = 10.0):
+        if isinstance(percentual, PercentualComissao):
+            self._percentual = percentual
+        else:
+            self._percentual = PercentualComissao(percentual)
+
+    @property
+    def percentual(self) -> PercentualComissao:
+        return self._percentual
+
+    def calcular(self, preco_servico: float) -> float:
+        return self._percentual.aplicar(preco_servico)
+
+
+class ComissaoBarbeiroSenior(EstrategiaComissao):
+    """Estrategia para barbeiros seniors: 15% fixo, sem desconto de insumos."""
+
+    _PERCENTUAL = PercentualComissao(15.0)
+
+    def calcular(self, preco_servico: float) -> float:
+        return self._PERCENTUAL.aplicar(preco_servico)
+
+
+class ComissaoBarbeiroJunior(EstrategiaComissao):
+    """Estrategia para barbeiros juniores: 10% com desconto de R$ 5,00 de insumos."""
+
+    _PERCENTUAL = PercentualComissao(10.0)
+    DESCONTO_INSUMOS: float = 5.0
+
+    def calcular(self, preco_servico: float) -> float:
+        bruto = self._PERCENTUAL.aplicar(preco_servico)
+        return round(max(0.0, bruto - self.DESCONTO_INSUMOS), 2)
+
+
+# ---------------------------------------------------------------------------
+
 class Comissao:
-    def __init__(self, id, atendimento, percentual=None, barbeiro=None):
+    def __init__(
+        self,
+        id,
+        atendimento,
+        percentual=None,
+        barbeiro=None,
+        estrategia: EstrategiaComissao | None = None,
+    ):
         if atendimento is None:
             raise ValueError("Atendimento e obrigatorio para gerar comissao")
 
@@ -250,16 +309,24 @@ class Comissao:
         if atendimento.barbeiro is not None and barbeiro != atendimento.barbeiro:
             raise ValueError("Atendimento nao pertence ao barbeiro informado")
 
-        if percentual is None:
-            percentual = PercentualComissao(10.0)
-        elif not isinstance(percentual, PercentualComissao):
-            percentual = PercentualComissao(percentual)
+        if estrategia is not None:
+            self._estrategia = estrategia
+            if isinstance(estrategia, ComissaoPercentualFixo):
+                self.percentual = estrategia.percentual
+            else:
+                self.percentual = None
+        else:
+            if percentual is None:
+                percentual = PercentualComissao(10.0)
+            elif not isinstance(percentual, PercentualComissao):
+                percentual = PercentualComissao(percentual)
+            self._estrategia = ComissaoPercentualFixo(percentual)
+            self.percentual = percentual
 
         self.id = id
         self.atendimento = atendimento
         self.barbeiro = barbeiro
-        self.percentual = percentual
-        self.valor = percentual.aplicar(atendimento.servico.preco)
+        self.valor = self._estrategia.calcular(atendimento.servico.preco)
 
     def __eq__(self, other):
         if not isinstance(other, Comissao):

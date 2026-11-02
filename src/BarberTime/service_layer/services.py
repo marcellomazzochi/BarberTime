@@ -1,5 +1,12 @@
 from datetime import datetime
-from BarberTime.domain.model import barbeiro, Atendimento, Comissao, StatusAtendimento, Fidelidade
+from BarberTime.domain.model import (
+    barbeiro,
+    Atendimento,
+    Comissao,
+    EstrategiaComissao,
+    StatusAtendimento,
+    Fidelidade,
+)
 
 def cadastrar_barbeiro(
     id: int,
@@ -118,7 +125,7 @@ def _comissao_para_dict(comissao: Comissao) -> dict:
         "id": comissao.id,
         "barbeiro_id": comissao.barbeiro.id if comissao.barbeiro is not None else None,
         "atendimento_id": comissao.atendimento.id,
-        "percentual": comissao.percentual.valor,
+        "percentual": comissao.percentual.valor if comissao.percentual is not None else None,
         "valor": comissao.valor,
     }
 
@@ -177,6 +184,7 @@ def gerar_comissao(
     atendimento_repo,
     comissao_repo,
     percentual=None,
+    estrategia: EstrategiaComissao | None = None,
     session=None,
 ) -> dict:
     if comissao_repo.get(comissao_id) is not None:
@@ -191,7 +199,12 @@ def gerar_comissao(
             f"Ja existe comissao gerada para o atendimento {atendimento_id}"
         )
 
-    comissao = Comissao(id=comissao_id, atendimento=atendimento, percentual=percentual)
+    comissao = Comissao(
+        id=comissao_id,
+        atendimento=atendimento,
+        percentual=percentual,
+        estrategia=estrategia,
+    )
     comissao_repo.add(comissao)
     if session is not None:
         session.commit()

@@ -1,7 +1,13 @@
 import pytest
 from datetime import datetime
 
-from BarberTime.domain.model import servico, StatusAtendimento
+from BarberTime.domain.model import (
+    servico,
+    StatusAtendimento,
+    ComissaoBarbeiroSenior,
+    ComissaoBarbeiroJunior,
+    ComissaoPercentualFixo,
+)
 from BarberTime.adapters.repository import (
     FakeBarbeiroRepository,
     FakeAtendimentoRepository,
@@ -145,3 +151,91 @@ def test_service_listar_comissoes_por_barbeiro():
     assert do_barbeiro_1[0]["valor"] == 5.0
 
     assert len(services.listar_comissoes(comissoes)) == 2
+
+
+# ---------------------------------------------------------------------------
+# Novos testes — OCP: gerar_comissao aceita estrategia via service layer
+# ---------------------------------------------------------------------------
+
+def test_service_gerar_comissao_com_estrategia_senior():
+    """Service repassa a estrategia senior: 15% de R$50 = R$7.50."""
+    barbeiros, atendimentos, comissoes = preparar_repos()
+    services.registrar_atendimento(
+        1, 1, servico(1, "Corte", 30, 50.0), datetime(2026, 10, 5, 10, 0),
+        atendimentos, barbeiros,
+    )
+    services.concluir_atendimento(1, atendimentos)
+
+    comissao = services.gerar_comissao(
+        comissao_id=1,
+        atendimento_id=1,
+        atendimento_repo=atendimentos,
+        comissao_repo=comissoes,
+        estrategia=ComissaoBarbeiroSenior(),
+    )
+    assert comissao["valor"] == 7.5
+    # Estrategias sem percentual unico serializam percentual como None
+    assert comissao["percentual"] is None
+
+
+def test_service_gerar_comissao_com_estrategia_junior():
+    """Service repassa a estrategia junior: 10% de R$50 - R$5 insumos = R$0."""
+    barbeiros, atendimentos, comissoes = preparar_repos()
+    services.registrar_atendimento(
+        1, 1, servico(1, "Corte", 30, 50.0), datetime(2026, 10, 5, 10, 0),
+        atendimentos, barbeiros,
+    )
+    services.concluir_atendimento(1, atendimentos)
+
+    comissao = services.gerar_comissao(
+        comissao_id=1,
+        atendimento_id=1,
+        atendimento_repo=atendimentos,
+        comissao_repo=comissoes,
+        estrategia=ComissaoBarbeiroJunior(),
+    )
+    assert comissao["valor"] == 0.0
+    assert comissao["percentual"] is None
+
+
+def test_service_gerar_comissao_estrategia_percentual_fixo_explicito():
+    """Passar ComissaoPercentualFixo explicitamente equivale ao legado percentual."""
+    barbeiros, atendimentos, comissoes = preparar_repos()
+    services.registrar_atendimento(
+        1, 1, servico(1, "Corte", 30, 100.0), datetime(2026, 10, 5, 10, 0),
+        atendimentos, barbeiros,
+    )
+    services.concluir_atendimento(1, atendimentos)
+
+    # Via estrategia explícita
+    comissao = services.gerar_comissao(
+        comissao_id=1,
+        atendimento_id=1,
+        atendimento_repo=atendimentos,
+        comissao_repo=comissoes,
+        estrategia=ComissaoPercentualFixo(15.0),
+    )
+    assert comissao["percentual"] == 15.0
+    assert comissao["valor"] == 15.0  # 15% de R$100
+
+
+def test_service_estrategia_tem_precedencia_sobre_percentual():
+    """Quando estrategia e percentual sao passados juntos, estrategia tem precedencia."""
+    barbeiros, atendimentos, comissoes = preparar_repos()
+    services.registrar_atendimento(
+        1, 1, servico(1, "Corte", 30, 100.0), datetime(2026, 10, 5, 10, 0),
+        atendimentos, barbeiros,
+    )
+    services.concluir_atendimento(1, atendimentos)
+
+    # Estrategia senior (15%) tem precedencia sobre percentual=5% ignorado
+    comissao = services.gerar_comissao(
+        comissao_id=1,
+        atendimento_id=1,
+        atendimento_repo=atendimentos,
+        comissao_repo=comissoes,
+        percentual=5.0,
+        estrategia=ComissaoBarbeiroSenior(),
+    )
+    # Senior sempre aplica 15%, nao o percentual=5% passado
+    assert comissao["valor"] == 15.0

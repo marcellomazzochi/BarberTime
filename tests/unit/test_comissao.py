@@ -9,6 +9,11 @@ from BarberTime.domain.model import (
     PercentualComissao,
     ServicoRealizado,
     StatusAtendimento,
+    # Estrategias OCP
+    EstrategiaComissao,
+    ComissaoPercentualFixo,
+    ComissaoBarbeiroSenior,
+    ComissaoBarbeiroJunior,
 )
 
 
@@ -23,6 +28,10 @@ def criar_atendimento(status=StatusAtendimento.AGENDADO, barbeiro_id=1):
         status=status,
     )
 
+
+# ---------------------------------------------------------------------------
+# Testes originais (comportamento preservado apos refatoracao)
+# ---------------------------------------------------------------------------
 
 def test_nao_gera_comissao_para_atendimento_agendado():
     atendimento = criar_atendimento(StatusAtendimento.AGENDADO)
@@ -167,3 +176,115 @@ def test_comissao_igualdade_por_identidade():
     assert c1 == c2
     assert c1 != c3
     assert hash(c1) == hash(c2)
+
+
+# ---------------------------------------------------------------------------
+# Novos testes — OCP: Strategy de Comissao
+# ---------------------------------------------------------------------------
+
+def test_estrategia_percentual_fixo_e_subclasse_de_estrategia_comissao():
+    """EstrategiaComissao e uma ABC; ComissaoPercentualFixo implementa o contrato."""
+    estrategia = ComissaoPercentualFixo(20.0)
+    assert isinstance(estrategia, EstrategiaComissao)
+
+
+def test_estrategia_percentual_fixo_calcula_valor_correto():
+    estrategia = ComissaoPercentualFixo(10.0)
+    assert estrategia.calcular(50.0) == 5.0
+
+    estrategia_30 = ComissaoPercentualFixo(30.0)
+    assert estrategia_30.calcular(100.0) == 30.0
+
+
+def test_estrategia_senior_calcula_15_porcento():
+    """Barbeiro senior: 15% sem desconto."""
+    estrategia = ComissaoBarbeiroSenior()
+    # 15% de R$100 = R$15
+    assert estrategia.calcular(100.0) == 15.0
+    # 15% de R$50 = R$7.50
+    assert estrategia.calcular(50.0) == 7.5
+
+
+def test_estrategia_junior_calcula_10_porcento_menos_desconto_insumos():
+    """Barbeiro junior: 10% - R$5 de insumos."""
+    estrategia = ComissaoBarbeiroJunior()
+    # 10% de R$50 = R$5 - R$5 desconto = R$0 (nao negativo)
+    assert estrategia.calcular(50.0) == 0.0
+    # 10% de R$100 = R$10 - R$5 = R$5
+    assert estrategia.calcular(100.0) == 5.0
+    # 10% de R$200 = R$20 - R$5 = R$15
+    assert estrategia.calcular(200.0) == 15.0
+
+
+def test_estrategia_junior_nao_retorna_valor_negativo():
+    """Com servico muito barato, comissao junior nao pode ser negativa."""
+    estrategia = ComissaoBarbeiroJunior()
+    # 10% de R$10 = R$1 - R$5 = -R$4 => deve ser R$0
+    assert estrategia.calcular(10.0) == 0.0
+
+
+def test_comissao_com_estrategia_senior_calcula_15_porcento():
+    """Usando estrategia senior diretamente no construtor de Comissao."""
+    atendimento = criar_atendimento()
+    atendimento.concluir()
+
+    comissao = Comissao(id=1, atendimento=atendimento, estrategia=ComissaoBarbeiroSenior())
+    # 15% de R$50 = R$7.50
+    assert comissao.valor == 7.5
+    # Sem percentual unico definido (strategy nao e PercentualFixo)
+    assert comissao.percentual is None
+
+
+def test_comissao_com_estrategia_junior_aplica_desconto_de_insumos():
+    """Usando estrategia junior diretamente no construtor de Comissao."""
+    atendimento = criar_atendimento()
+    atendimento.concluir()
+
+    comissao = Comissao(id=1, atendimento=atendimento, estrategia=ComissaoBarbeiroJunior())
+    # 10% de R$50 = R$5 - R$5 = R$0
+    assert comissao.valor == 0.0
+    assert comissao.percentual is None
+
+
+def test_comissao_com_estrategia_percentual_fixo_expoe_percentual():
+    """Estrategia PercentualFixo expoe o percentual para retrocompatibilidade."""
+    atendimento = criar_atendimento()
+    atendimento.concluir()
+
+    estrategia = ComissaoPercentualFixo(20.0)
+    comissao = Comissao(id=1, atendimento=atendimento, estrategia=estrategia)
+    assert comissao.percentual.valor == 20.0
+    assert comissao.valor == 10.0  # 20% de R$50
+
+
+def test_comissao_estrategia_e_legado_percentual_sao_equivalentes_para_padrao():
+    """Instanciar Comissao sem args (10%) deve dar mesmo valor que estrategia padrao explicita."""
+    atendimento = criar_atendimento()
+    atendimento.concluir()
+
+    c_legado = Comissao(id=1, atendimento=atendimento)
+    c_estrategia = Comissao(id=2, atendimento=atendimento, estrategia=ComissaoPercentualFixo(10.0))
+
+    assert c_legado.valor == c_estrategia.valor == 5.0
+
+
+def test_estrategia_e_abc_nao_pode_ser_instanciada_diretamente():
+    """EstrategiaComissao e abstrata; instanciar diretamente deve lancar TypeError."""
+    with pytest.raises(TypeError):
+        EstrategiaComissao()
+
+
+def test_nova_estrategia_sem_modificar_comissao(monkeypatch):
+    """OCP: e possivel adicionar nova politica de comissao sem alterar Comissao."""
+
+    class ComissaoFidelidade(EstrategiaComissao):
+        """Estrategia hipotetica: desconto de 20% para clientes fidelizados."""
+        def calcular(self, preco_servico: float) -> float:
+            return round(preco_servico * 0.20, 2)
+
+    atendimento = criar_atendimento()
+    atendimento.concluir()
+
+    comissao = Comissao(id=1, atendimento=atendimento, estrategia=ComissaoFidelidade())
+    # 20% de R$50 = R$10
+    assert comissao.valor == 10.0
