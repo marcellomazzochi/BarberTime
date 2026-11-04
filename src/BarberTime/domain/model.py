@@ -116,6 +116,16 @@ class barbeiro:
 
 Barbeiro = barbeiro
 
+class RegraDisponibilidade:
+    def validar(self, agendamento, agendamentos_existentes):
+        raise NotImplementedError
+
+class ValidadorHorarioExato(RegraDisponibilidade):
+    def validar(self, agendamento, agendamentos_existentes):
+        horario = (agendamento.barbeiro, agendamento.data_hora)
+        if horario in agendamentos_existentes:
+            raise ValueError("Horario indisponivel")
+
 class Agendamento:
     def __init__(self, id, cliente, barbeiro, servico, data_hora):
         self.id = id
@@ -126,17 +136,15 @@ class Agendamento:
         self.status = "Agendado"
 
 class Agenda:
-    def __init__(self):
+    def __init__(self, validador: RegraDisponibilidade = None):
         self.agendamentos = {}
+        self.validador = validador or ValidadorHorarioExato()
 
     def adicionar_agendamento(self, agendamento):
+        self.validador.validar(agendamento, self.agendamentos)
         horario = (agendamento.barbeiro, agendamento.data_hora)
-        
-        if horario in self.agendamentos:
-            raise ValueError("Horario indisponivel")
-
         self.agendamentos[horario] = agendamento
-
+        
 from enum import Enum
 
 
