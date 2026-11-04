@@ -36,25 +36,26 @@ class servico:
         self.duracao = duracao
         self.preco = preco 
         
-class barbeiro:
-    def __init__(self, id, nome, horario_inicio="08:00", horario_fim="18:00", dias_trabalho="0,1,2,3,4,5"):
-        self.id = id
-        self.nome = nome
-        self.horario_inicio = horario_inicio
-        self.horario_fim = horario_fim
-        self.dias_trabalho = dias_trabalho
+@dataclass(frozen=True)
+class JornadaTrabalho:
+    horario_inicio: str = "08:00"
+    horario_fim: str = "18:00"
+    dias_trabalho: str = "0,1,2,3,4,5"
 
-    def _obter_dias_trabalho(self):
+    def obter_dias(self) -> list[int]:
         if isinstance(self.dias_trabalho, str):
             return [int(d.strip()) for d in self.dias_trabalho.split(",") if d.strip()]
         return list(self.dias_trabalho)
 
-    def pode_atender(self, data_hora, duracao_minutos: int = 0) -> bool:
+    def contem_dia(self, data_hora: datetime | str) -> bool:
         if isinstance(data_hora, str):
             data_hora = datetime.fromisoformat(data_hora)
+        return data_hora.weekday() in self.obter_dias()
 
-        dias = self._obter_dias_trabalho()
-        if data_hora.weekday() not in dias:
+    def contem_horario(self, data_hora: datetime | str, duracao_minutos: int = 0) -> bool:
+        if isinstance(data_hora, str):
+            data_hora = datetime.fromisoformat(data_hora)
+        if not self.contem_dia(data_hora):
             return False
 
         t_inicio = datetime.strptime(self.horario_inicio, "%H:%M").time()
@@ -71,12 +72,11 @@ class barbeiro:
 
         return True
 
-    def validar_agendamento(self, data_hora, duracao_minutos: int = 0):
+    def validar_atendimento(self, data_hora: datetime | str, duracao_minutos: int = 0) -> None:
         if isinstance(data_hora, str):
             data_hora = datetime.fromisoformat(data_hora)
 
-        dias = self._obter_dias_trabalho()
-        if data_hora.weekday() not in dias:
+        if not self.contem_dia(data_hora):
             raise ValueError("Agendamento fora dos dias de trabalho do barbeiro")
 
         t_inicio = datetime.strptime(self.horario_inicio, "%H:%M").time()
@@ -94,17 +94,86 @@ class barbeiro:
             if termino > t_fim:
                 raise ValueError("Duracao do atendimento ultrapassa o horario de encerramento do expediente")
 
+    def com_novo_expediente(self, novo_inicio: str, novo_fim: str) -> "JornadaTrabalho":
+        t_inicio = datetime.strptime(novo_inicio, "%H:%M").time()
+        t_fim = datetime.strptime(novo_fim, "%H:%M").time()
+        if t_inicio >= t_fim:
+            raise ValueError("Horario de inicio deve ser anterior ao horario de fim")
+        return JornadaTrabalho(
+            horario_inicio=novo_inicio,
+            horario_fim=novo_fim,
+            dias_trabalho=self.dias_trabalho,
+        )
+
+
+class barbeiro:
+    def __init__(
+        self,
+        id,
+        nome,
+        horario_inicio="08:00",
+        horario_fim="18:00",
+        dias_trabalho="0,1,2,3,4,5",
+        jornada: JornadaTrabalho | None = None,
+    ):
+        self.id = id
+        self.nome = nome
+        if jornada is not None:
+            self.jornada = jornada
+        else:
+            self.horario_inicio = horario_inicio
+            self.horario_fim = horario_fim
+            self.dias_trabalho = dias_trabalho
+            self._jornada = JornadaTrabalho(
+                horario_inicio=horario_inicio,
+                horario_fim=horario_fim,
+                dias_trabalho=dias_trabalho,
+            )
+
+    @property
+    def jornada(self) -> JornadaTrabalho:
+        h_inicio = getattr(self, "horario_inicio", "08:00")
+        h_fim = getattr(self, "horario_fim", "18:00")
+        d_trabalho = getattr(self, "dias_trabalho", "0,1,2,3,4,5")
+        if (
+            not hasattr(self, "_jornada")
+            or self._jornada is None
+            or self._jornada.horario_inicio != h_inicio
+            or self._jornada.horario_fim != h_fim
+            or self._jornada.dias_trabalho != d_trabalho
+        ):
+            self._jornada = JornadaTrabalho(
+                horario_inicio=h_inicio,
+                horario_fim=h_fim,
+                dias_trabalho=d_trabalho,
+            )
+        return self._jornada
+
+    @jornada.setter
+    def jornada(self, nova_jornada: JornadaTrabalho):
+        self._jornada = nova_jornada
+        self.horario_inicio = nova_jornada.horario_inicio
+        self.horario_fim = nova_jornada.horario_fim
+        self.dias_trabalho = nova_jornada.dias_trabalho
+
+    def _obter_dias_trabalho(self):
+        return self.jornada.obter_dias()
+
+    def pode_atender(self, data_hora, duracao_minutos: int = 0) -> bool:
+        return self.jornada.contem_horario(data_hora, duracao_minutos)
+
+    def validar_agendamento(self, data_hora, duracao_minutos: int = 0):
+        self.jornada.validar_atendimento(data_hora, duracao_minutos)
+
     def adicionar_agendamento(self, agendamento):
         duracao = getattr(agendamento.servico, "duracao", 0) if hasattr(agendamento, "servico") else 0
         self.validar_agendamento(agendamento.data_hora, duracao)
 
     def alterar_expediente(self, novo_inicio: str, novo_fim: str):
-        t_inicio = datetime.strptime(novo_inicio, "%H:%M").time()
-        t_fim = datetime.strptime(novo_fim, "%H:%M").time()
-        if t_inicio >= t_fim:
-            raise ValueError("Horario de inicio deve ser anterior ao horario de fim")
-        self.horario_inicio = novo_inicio
-        self.horario_fim = novo_fim
+        self.jornada = self.jornada.com_novo_expediente(novo_inicio, novo_fim)
+
+    def definir_jornada(self, nova_jornada: JornadaTrabalho):
+        self.jornada = nova_jornada
 
     def __eq__(self, other):
         if not isinstance(other, barbeiro):
