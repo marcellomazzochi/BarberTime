@@ -320,3 +320,41 @@ Utilizei o ChatGPT como ferramenta de apoio para compreender os requisitos da at
 As datas foram organizadas a partir do histórico de commits disponível. Os períodos identificados como estimados representam aproximações do período de trabalho, e não necessariamente o horário ou o dia em que cada atividade foi iniciada.
 
 
+
+
+---
+
+## Fase 2 — Checkpoint 2 (Semana de SOLID)
+
+### Integrante: Ruan do Nascimento Silva (`ruanlov`)
+**Agregado sob minha responsabilidade:** Comissão
+
+---
+
+#### Checkpoint 2 — Parte 2: Refatoração SOLID no Agregado de Comissão
+
+**Arquivos alterados:**
+
+| Arquivo | Tipo de alteração |
+|---|---|
+| `src/BarberTime/domain/model.py` | Adição de `EstrategiaComissao` (ABC) e três implementações concretas (`ComissaoPercentualFixo`, `ComissaoBarbeiroSenior`, `ComissaoBarbeiroJunior`); refatoração do construtor de `Comissao` para injetar a estratégia. |
+| `src/BarberTime/service_layer/services.py` | Adição do parâmetro opcional `estrategia: EstrategiaComissao` em `gerar_comissao`; ajuste de `_comissao_para_dict` para serializar `percentual=None`. |
+| `tests/unit/test_comissao.py` | 11 novos testes das estratégias (isolados) + 16 testes originais preservados = 27 testes. |
+| `tests/unit/test_services_comissao.py` | 4 novos testes do fluxo de serviço com estratégias + 12 originais preservados = 16 testes. |
+| `docs/solid.md` | Documento de análise SOLID com a violação identificada, o problema concreto, a refatoração e os trade-offs. |
+
+**Decisão técnica (uma frase):**
+Apliquei o **padrão Strategy** (OCP) ao cálculo de comissão introduzindo a hierarquia `EstrategiaComissao` para que novas políticas de repasse — como os 15% para barbeiros sênior ou o desconto de R$ 5,00 de insumos para juniores — possam ser adicionadas criando-se apenas uma nova subclasse, sem abrir nem modificar a classe `Comissao` ou a função `gerar_comissao`.
+
+**Hashes de commit:**
+
+| Marco | Hash abreviado |
+|---|---|
+| Último commit antes da refatoração (`350a58b`) | `350a58b` |
+| Commit que introduz a refatoração (OCP com Strategy) | `84dd28c` |
+| Commit de documentação (`docs/solid.md` + este DECISIONS.md) | `85bd126` |
+
+**Declaração de Uso de IA:**
+Utilizei o agente **Antigravity (Claude Sonnet 4.6 / Gemini 3.8 Flash)** para automatizar integralmente esta refatoração: o agente explorou de forma autônoma o repositório BarberTime, identificou a violação do OCP no agregado de Comissão, escolheu o padrão Strategy como solução, escreveu o código refatorado em `model.py` e `services.py`, adicionou 15 novos testes (mantendo os 28 originais verdes) e redigiu a seção `docs/solid.md` com análise, trade-offs e marcadores de hash. Todo o conteúdo foi revisado e validado por mim antes de ser incorporado ao repositório.
+
+---
