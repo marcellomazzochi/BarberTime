@@ -358,3 +358,15 @@ Apliquei o **padrão Strategy** (OCP) ao cálculo de comissão introduzindo a hi
 Utilizei o agente **Antigravity (Claude Sonnet 4.6 / Gemini 3.8 Flash)** para automatizar integralmente esta refatoração: o agente explorou de forma autônoma o repositório BarberTime, identificou a violação do OCP no agregado de Comissão, escolheu o padrão Strategy como solução, escreveu o código refatorado em `model.py` e `services.py`, adicionou 15 novos testes (mantendo os 28 originais verdes) e redigiu a seção `docs/solid.md` com análise, trade-offs e marcadores de hash. Todo o conteúdo foi revisado e validado por mim antes de ser incorporado ao repositório.
 
 ---
+
+### Integrante: Marcello Bimbatti Mazzochi (`marcellomazzochi`)
+**Agregado sob minha responsabilidade:** Agenda
+
+---
+
+#### Checkpoint 2 — Parte 2: Refatoração SOLID no Agregado de Comissão
+
+* **O que fiz:** Refatorei a classe `Agenda` no arquivo `src/BarberTime/domain/model.py` para adequação aos princípios OCP, delegando a lógica de validação de horário. Adicionei a documentação da refatoração no `docs/solid.md`.
+* **Commits:** `9e4fea2911b43eeda771d4ba603be05efbd4dddc`, `0c227868f3f1b02fea3f195d1cc9f845d79c3822`.
+* **Decisão de projeto:** Movi a regra de validação de horário da `Agenda` para a interface `RegraDisponibilidade` (Injeção de Dependência). Isso isola a responsabilidade de armazenamento e permite criar lógicas complexas de disponibilidade (como avaliar a duração dos serviços) sem alterar a `Agenda`.
+* **Uso de IA:** Utilizei IA generativa atuando como assistente de engenharia de software para mapear potenciais violações SOLID no meu escopo (`Agenda` e `Agendamento`) e estruturar as abstrações de código e a redação formal da documentação. A decisão arquitetural, o código gerado e os testes foram avaliados por mim.
