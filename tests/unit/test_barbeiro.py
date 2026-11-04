@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from BarberTime.domain.model import barbeiro, Barbeiro, HorarioTrabalho, cliente, servico, Agendamento
+from BarberTime.domain.model import barbeiro, Barbeiro, HorarioTrabalho, JornadaTrabalho, cliente, servico, Agendamento
 
 def test_criar_barbeiro_com_horarios_padrao():
     b = barbeiro(id=1, nome="Jonathan")
@@ -106,3 +106,79 @@ def test_igualdade_de_barbeiros_por_identidade():
     assert b1 == b2
     assert b1 != b3
     assert hash(b1) == hash(b2)
+
+def test_jornada_trabalho_isolada_value_object():
+    jornada = JornadaTrabalho(horario_inicio="09:00", horario_fim="18:00", dias_trabalho="0,1,2,3,4")
+    assert jornada.obter_dias() == [0, 1, 2, 3, 4]
+
+    # Segunda-feira as 10h (dentro)
+    dt_valida = datetime(2026, 10, 5, 10, 0)
+    assert jornada.contem_dia(dt_valida) is True
+    assert jornada.contem_horario(dt_valida, duracao_minutos=30) is True
+    jornada.validar_atendimento(dt_valida, duracao_minutos=30)
+
+    # Domingo (fora dos dias de trabalho)
+    dt_domingo = datetime(2026, 10, 11, 10, 0)
+    assert jornada.contem_dia(dt_domingo) is False
+    assert jornada.contem_horario(dt_domingo) is False
+    with pytest.raises(ValueError, match="fora dos dias de trabalho"):
+        jornada.validar_atendimento(dt_domingo)
+
+    # Horario antes do inicio
+    dt_antes = datetime(2026, 10, 5, 8, 30)
+    assert jornada.contem_horario(dt_antes) is False
+    with pytest.raises(ValueError, match="antes do inicio do expediente"):
+        jornada.validar_atendimento(dt_antes)
+
+    # Horario apos o fim
+    dt_depois = datetime(2026, 10, 5, 18, 30)
+    assert jornada.contem_horario(dt_depois) is False
+    with pytest.raises(ValueError, match="apos o encerramento do expediente"):
+        jornada.validar_atendimento(dt_depois)
+
+    # Duracao que ultrapassa o encerramento
+    dt_limite = datetime(2026, 10, 5, 17, 45)
+    assert jornada.contem_horario(dt_limite, duracao_minutos=30) is False
+    with pytest.raises(ValueError, match="ultrapassa o horario de encerramento"):
+        jornada.validar_atendimento(dt_limite, duracao_minutos=30)
+
+
+def test_jornada_trabalho_com_novo_expediente_imutavel():
+    jornada = JornadaTrabalho(horario_inicio="08:00", horario_fim="18:00")
+    nova = jornada.com_novo_expediente("10:00", "19:00")
+    assert jornada.horario_inicio == "08:00"
+    assert nova.horario_inicio == "10:00"
+    assert nova.horario_fim == "19:00"
+
+    with pytest.raises(ValueError, match="inicio deve ser anterior ao horario de fim"):
+        jornada.com_novo_expediente("19:00", "18:00")
+
+
+def test_barbeiro_com_jornada_injetada_srp():
+    jornada_custom = JornadaTrabalho(horario_inicio="13:00", horario_fim="21:00", dias_trabalho="1,2,3,4,5")
+    b = barbeiro(id=5, nome="Lucas", jornada=jornada_custom)
+    assert b.horario_inicio == "13:00"
+    assert b.horario_fim == "21:00"
+    assert b.jornada == jornada_custom
+
+    # 10:00 esta fora da jornada deste barbeiro
+    dt_manha = datetime(2026, 10, 6, 10, 0)
+    assert b.pode_atender(dt_manha) is False
+
+    # 15:00 esta dentro
+    dt_tarde = datetime(2026, 10, 6, 15, 0)
+    assert b.pode_atender(dt_tarde) is True
+
+
+def test_barbeiro_definir_nova_jornada_dinamica():
+    b = barbeiro(id=1, nome="Jonathan")
+    nova_jornada = JornadaTrabalho(horario_inicio="07:00", horario_fim="15:00", dias_trabalho="0,1,2,3,4")
+    b.definir_jornada(nova_jornada)
+    assert b.horario_inicio == "07:00"
+    assert b.horario_fim == "15:00"
+    assert b.jornada == nova_jornada
+
+    # 07:30 agora e valido
+    dt_cedo = datetime(2026, 10, 5, 7, 30)
+    assert b.pode_atender(dt_cedo) is True
+
