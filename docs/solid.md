@@ -257,3 +257,12 @@ A refatoração justifica-se plenamente a partir do momento em que o negócio de
 ---
 
 *Documento revisado e validado. Refatoração e documentação desenvolvidas com auxílio de agente de engenharia de software autônomo.*
+
+## Seção: Marcello Bimbatti Mazzochi - Agregado Agenda
+
+* **Princípio violado:** Princípio Aberto-Fechado.
+* **Trecho de código e Hash:** A violação ocorria no método `adicionar_agendamento` da classe `Agenda`. Hash: `0dfb75ae2847f05c3b443471a93b89ee47a0617b`.
+* **Problema concreto:** A classe `Agenda` estava responsável por armazenar a coleção de agendamentos e também por definir a regra de conflito de horários. Se houver uma mudança de requisito exigindo que o sistema passe a considerar a `duracao` do serviço para bloquear horários sobrepostos, seríamos obrigados a modificar o código interno da `Agenda`, ferindo o OCP.
+* **Refatoração e Hash "depois":** Foi criada uma abstração `RegraDisponibilidade` e uma implementação concreta `ValidadorHorarioExato`. A classe `Agenda` passou a receber o validador via injeção de dependência. Hash do commit: `9e4fea2911b43eeda771d4ba603be05efbd4dddc`.
+* **Garantia dos testes:** A assinatura original foi mantida instanciando o `ValidadorHorarioExato` como valor padrão no construtor da `Agenda`. Isso garantiu que todos os testes unitários originais de conflito e agendamento continuassem passando sem alteração de comportamento.
+* **Custo da refatoração:** Mais classes e uma indireção no construtor da Agenda. O custo compensa pois agora o sistema suporta novas políticas de agendamento (tolerância de atraso, sobreposição ou cálculo de duração de serviço) criando novas classes de validação, sem tocar na estrutura de dados da `Agenda`.
