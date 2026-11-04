@@ -370,3 +370,40 @@ Utilizei o agente **Antigravity (Claude Sonnet 4.6 / Gemini 3.8 Flash)** para au
 * **Commits:** `9e4fea2911b43eeda771d4ba603be05efbd4dddc`, `0c227868f3f1b02fea3f195d1cc9f845d79c3822`.
 * **Decisão de projeto:** Movi a regra de validação de horário da `Agenda` para a interface `RegraDisponibilidade` (Injeção de Dependência). Isso isola a responsabilidade de armazenamento e permite criar lógicas complexas de disponibilidade (como avaliar a duração dos serviços) sem alterar a `Agenda`.
 * **Uso de IA:** Utilizei IA generativa atuando como assistente de engenharia de software para mapear potenciais violações SOLID no meu escopo (`Agenda` e `Agendamento`) e estruturar as abstrações de código e a redação formal da documentação. A decisão arquitetural, o código gerado e os testes foram avaliados por mim.
+
+---
+
+### Integrante: Jonathan do Nascimento Melo (`JonathanMelo0`)
+**Agregado sob minha responsabilidade:** Barbeiro
+
+---
+
+#### Checkpoint 2 — Refatoração SOLID no Agregado Barbeiro
+
+**Princípio aplicado:** SRP — Responsabilidade Única
+
+**O que eu fiz:**
+
+No Checkpoint 1, a classe `barbeiro` estava fazendo duas coisas ao mesmo tempo: guardar os dados do profissional (id, nome, agendamentos) e cuidar de toda a lógica de expediente — quais dias ele trabalha, horário de início e fim, se um determinado horário cabe dentro do turno. Qualquer ajuste numa regra de horário obrigava a abrir a entidade principal do agregado, e aí você corre o risco de introduzir um bug em código que nem tem relação com o que estava sendo mudado.
+
+A solução foi criar o `JornadaTrabalho`, um Value Object imutável (`@dataclass(frozen=True)`), que concentra tudo que é regra de expediente num lugar só. A classe `barbeiro` passou a simplesmente delegar para esse objeto quando precisa saber se pode atender num horário ou não.
+
+**Arquivos alterados:**
+
+| Arquivo | O que mudou |
+|---|---|
+| `src/BarberTime/domain/model.py` | Criação do `JornadaTrabalho` com os métodos de expediente; `barbeiro` refatorado para delegar via propriedade sincronizada com o ORM. |
+| `tests/unit/test_barbeiro.py` | 4 testes novos (testando o `JornadaTrabalho` isolado e integrado ao `barbeiro`) + 12 originais mantidos = 16 no total. |
+| `docs/solid.md` | Minha seção com a análise da violação, hashes de antes e depois, testes e custo/benefício. |
+
+**Hashes dos commits:**
+
+| Marco | Hash |
+|---|---|
+| Último commit com a violação (antes) | `f30f823` |
+| Refatoração SRP | `dd39e94` |
+| Testes unitários do SRP | `adddd3e` |
+
+**Por que ficou assim:** Mantive os atributos `horario_inicio`, `horario_fim` e `dias_trabalho` como colunas diretas no `barbeiro` para não quebrar o mapeamento do SQLAlchemy imperativo — o ORM não chama o `__init__` ao hidratar objetos do banco, então as colunas precisam existir como atributos diretos. A propriedade `jornada` constrói e mantém o `JornadaTrabalho` sincronizado a partir dessas colunas. Não precisei mexer no banco nem no mapeamento dos colegas.
+
+**Uso de IA:** Usei o agente Antigravity para explorar o repositório, pensar no design do `JornadaTrabalho` e redigir a documentação. O código foi revisado por mim, os testes rodaram localmente (104 passando, CI verde) e os commits foram feitos por mim.
