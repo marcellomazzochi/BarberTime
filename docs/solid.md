@@ -266,3 +266,163 @@ A refatoração justifica-se plenamente a partir do momento em que o negócio de
 * **Refatoração e Hash "depois":** Foi criada uma abstração `RegraDisponibilidade` e uma implementação concreta `ValidadorHorarioExato`. A classe `Agenda` passou a receber o validador via injeção de dependência. Hash do commit: `9e4fea2911b43eeda771d4ba603be05efbd4dddc`.
 * **Garantia dos testes:** A assinatura original foi mantida instanciando o `ValidadorHorarioExato` como valor padrão no construtor da `Agenda`. Isso garantiu que todos os testes unitários originais de conflito e agendamento continuassem passando sem alteração de comportamento.
 * **Custo da refatoração:** Mais classes e uma indireção no construtor da Agenda. O custo compensa pois agora o sistema suporta novas políticas de agendamento (tolerância de atraso, sobreposição ou cálculo de duração de serviço) criando novas classes de validação, sem tocar na estrutura de dados da `Agenda`.
+
+## Seção: Jonathan do Nascimento Melo — Agregado Barbeiro
+
+---
+
+### 1. Princípio Escolhido
+
+**SRP — Princípio da Responsabilidade Única** (*Single Responsibility Principle*)
+
+> "Uma classe deve ter um, e somente um, motivo para mudar."
+> — Robert C. Martin (*Clean Architecture*, 2018)
+
+---
+
+### 2. Identificação da Violação (código anterior a 06/10)
+
+#### 2.1 O Código Original
+
+No commit `f30f823` (29/09/2026), a classe `barbeiro` concentrava, além da identidade do profissional, toda a lógica de calendário: quais dias trabalha, qual o horário de início e fim, se um dado momento é coberto pelo expediente e como levantar exceção quando não é.
+
+```python
+# model.py — ANTES da refatoração (commit f30f823)
+class barbeiro:
+    def __init__(self, id, nome, horario_inicio="08:00", horario_fim="18:00",
+                 dias_trabalho="0,1,2,3,4,5"):
+        self.id = id
+        self.nome = nome
+        self.horario_inicio = horario_inicio
+        self.horario_fim = horario_fim
+        self.dias_trabalho = dias_trabalho
+
+    def _obter_dias_trabalho(self):
+        if isinstance(self.dias_trabalho, str):
+            return [int(d.strip()) for d in self.dias_trabalho.split(",") if d.strip()]
+        return list(self.dias_trabalho)
+
+    def pode_atender(self, data_hora, duracao_minutos: int = 0) -> bool:
+        # 25 linhas de lógica de calendário dentro da entidade
+        ...
+
+    def validar_agendamento(self, data_hora, duracao_minutos: int = 0):
+        # 20 linhas de lógica de calendário dentro da entidade
+        ...
+```
+
+#### 2.2 O Problema Concreto
+
+A classe `barbeiro` tinha **dois motivos independentes para mudar**:
+
+| Motivo de mudança | Exemplo concreto |
+|---|---|
+| **Regras de identidade do barbeiro** | Novo campo `especialidade`, mudança de como a igualdade por `id` é calculada. |
+| **Regras de calendário/expediente** | Adicionar tolerância de 5 minutos no início do turno, suportar jornada noturna com virada de meia-noite, aceitar dias por nome em vez de número. |
+
+Qualquer ajuste na lógica de horário exigia abrir a classe `barbeiro` — entidade central do agregado — correndo o risco de introduzir regressões em código de identidade ou agendamento que nada tinha a ver com a alteração.
+
+Além disso, como os três atributos de jornada (`horario_inicio`, `horario_fim`, `dias_trabalho`) eram colunas escalares soltas no objeto, não havia nenhuma garantia estrutural de que o conjunto estava coerente. Um trecho de código poderia alterar `horario_inicio` sem atualizar `horario_fim`, deixando o barbeiro em estado internamente inconsistente.
+
+---
+
+### 3. A Refatoração — Princípio da Responsabilidade Única (SRP)
+
+#### 3.1 Hashes Git
+
+| Marco | Hash |
+|---|---|
+| Último commit com a violação (antes) | `f30f823` |
+| Commit que introduz a refatoração (SRP) | *(ver abaixo após o commit)* |
+
+#### 3.2 Solução: Value Object `JornadaTrabalho`
+
+A lógica de calendário foi extraída para um **Value Object imutável** (`@dataclass(frozen=True)`). A classe `barbeiro` passou a **delegar** todas as consultas de expediente para esse objeto, mantendo apenas o que é de sua responsabilidade exclusiva: identidade, nome e agendamentos.
+
+```python
+# model.py — DEPOIS da refatoração
+@dataclass(frozen=True)
+class JornadaTrabalho:
+    horario_inicio: str = "08:00"
+    horario_fim: str = "18:00"
+    dias_trabalho: str = "0,1,2,3,4,5"
+
+    def obter_dias(self) -> list[int]: ...
+    def contem_dia(self, data_hora) -> bool: ...
+    def contem_horario(self, data_hora, duracao_minutos=0) -> bool: ...
+    def validar_atendimento(self, data_hora, duracao_minutos=0) -> None: ...
+    def com_novo_expediente(self, novo_inicio, novo_fim) -> "JornadaTrabalho": ...
+
+
+class barbeiro:
+    def __init__(self, id, nome, horario_inicio="08:00", horario_fim="18:00",
+                 dias_trabalho="0,1,2,3,4,5", jornada: JornadaTrabalho | None = None):
+        self.id = id
+        self.nome = nome
+        # jornada como propriedade calculada — mantém compatibilidade com ORM
+        ...
+
+    def pode_atender(self, data_hora, duracao_minutos=0) -> bool:
+        return self.jornada.contem_horario(data_hora, duracao_minutos)   # delegação
+
+    def validar_agendamento(self, data_hora, duracao_minutos=0):
+        self.jornada.validar_atendimento(data_hora, duracao_minutos)     # delegação
+```
+
+**Resultado estrutural:**
+
+```
+  ┌────────────────────┐
+  │      barbeiro      │  ← 1 responsabilidade: identidade + agendamentos
+  │  (id, nome, ...)   │
+  └─────────┬──────────┘
+            │ delega consultas de expediente
+            ▼
+  ┌────────────────────┐
+  │   JornadaTrabalho  │  ← 1 responsabilidade: regras de calendário
+  │  (frozen dataclass)│
+  └────────────────────┘
+```
+
+**Decisão de compatibilidade com SQLAlchemy:** O ORM imperativo hidrata objetos via `__init__` com atributos escalares (`horario_inicio`, `horario_fim`, `dias_trabalho`). Para não exigir migração de banco nem alterar o mapeamento dos colegas, a propriedade `jornada` constrói ou recalcula o `JornadaTrabalho` a partir dessas colunas sempre que necessário, mantendo retrocompatibilidade total.
+
+---
+
+### 4. Garantia dos Testes
+
+| Arquivo de Teste | Antes | Depois | Escopo |
+|---|---|---|---|
+| `tests/unit/test_barbeiro.py` | 12 testes | **16 testes** | 4 novos testes unitários de `JornadaTrabalho` isolada e integração com `barbeiro` via SRP |
+
+Casos de teste que comprovam a refatoração:
+
+- `test_jornada_trabalho_isolada_value_object`: valida `obter_dias`, `contem_dia`, `contem_horario` e `validar_atendimento` **sem instanciar `barbeiro`**, provando que `JornadaTrabalho` é autossuficiente.
+- `test_jornada_trabalho_com_novo_expediente_imutavel`: confirma que `com_novo_expediente` retorna um *novo* objeto sem alterar o original — imutabilidade garantida pelo `frozen=True`.
+- `test_barbeiro_com_jornada_injetada_srp`: cria um `JornadaTrabalho` separado e o injeta no construtor de `barbeiro`, provando que a entidade aceita e delega corretamente.
+- `test_barbeiro_definir_nova_jornada_dinamica`: chama `barbeiro.definir_jornada(nova)` e verifica que os atributos `horario_inicio` e `horario_fim` do barbeiro são sincronizados — sem regressão nos testes de agendamento existentes.
+
+Todos os **104 testes do projeto continuam passando** (0 regressões, CI verde).
+
+---
+
+### 5. Análise Crítica — Trade-offs da Refatoração
+
+#### 5.1 Benefícios
+
+1. **Coesão e legibilidade:** Cada classe tem um propósito declarado e óbvio. Um desenvolvedor que precisa alterar a regra de horário sabe exatamente onde ir — `JornadaTrabalho` — sem arriscar quebrar lógica de agendamento da classe `barbeiro`.
+2. **Testabilidade unitária real:** As regras de calendário podem ser exercitadas em dezenas de cenários de borda (jornada noturna, minutos limite, dias específicos) sem nenhum fixture de banco ou instância de `barbeiro`.
+3. **Imutabilidade como invariante:** O `frozen=True` garante em tempo de execução que nenhum trecho de código modifica sub-repticiamente apenas um dos campos da jornada, evitando estados internamente inconsistentes.
+
+#### 5.2 Custos e Desvantagens
+
+1. **Indireção adicional para o ORM:** A propriedade `jornada` com sincronização bidirecional é necessária apenas por causa do mapeamento imperativo do SQLAlchemy, que não invoca `__init__` na hidratação. Sem o ORM, o design seria mais simples.
+2. **Colisão de namespace no setter:** O `@jornada.setter` precisa manter `horario_inicio`, `horario_fim` e `dias_trabalho` sincronizados manualmente. Qualquer nova coluna na jornada exige atualizar o setter em dois lugares.
+3. **Nova classe no módulo compartilhado:** `JornadaTrabalho` foi adicionada ao mesmo `model.py` que todos os agregados compartilham. Em projetos maiores o ideal seria um módulo próprio para o agregado `barbeiro`.
+
+#### 5.3 Conclusão
+
+O custo de manter a sincronização no setter é pontual e isolado. O benefício de ter a lógica de calendário coesa, imutável e testável de forma independente supera com folga a indireção, especialmente à medida que novas regras de expediente forem surgindo (ex.: jornada noturna, feriados, escala de plantão).
+
+---
+
+*Refatoração desenvolvida por Jonathan do Nascimento Melo com auxílio de agente de engenharia de software. Código revisado, testes executados e commits realizados pelo próprio integrante.*
