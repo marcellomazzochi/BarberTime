@@ -106,6 +106,153 @@ class JornadaTrabalho:
         )
 
 
+# ===========================================================================
+# Padrão GoF State — Ciclo de Vida e Disponibilidade do Barbeiro
+# ===========================================================================
+class EstadoBarbeiro(abc.ABC):
+    """Interface abstrata (State) para o ciclo de vida e disponibilidade do Barbeiro."""
+
+    @property
+    @abc.abstractmethod
+    def nome(self) -> str:
+        """Nome identificador do estado atual."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def pode_atender(self, barbeiro: "barbeiro", data_hora, duracao_minutos: int = 0) -> bool:
+        """Verifica se o barbeiro pode atender na data/hora conforme o estado atual."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def validar_agendamento(self, barbeiro: "barbeiro", data_hora, duracao_minutos: int = 0) -> None:
+        """Valida se o agendamento pode ser realizado ou levanta excecao explicativa."""
+        raise NotImplementedError
+
+    def entrar_em_ferias(self, barbeiro: "barbeiro") -> None:
+        """Transicao para periodo de ferias."""
+        raise ValueError(f"Barbeiro no estado '{self.nome}' nao pode entrar em ferias diretamente")
+
+    def retornar_ao_trabalho(self, barbeiro: "barbeiro") -> None:
+        """Retorno ao atendimento normal/disponivel."""
+        raise ValueError(f"Barbeiro no estado '{self.nome}' ja se encontra ativo ou nao pode retornar diretamente")
+
+    def pausar(self, barbeiro: "barbeiro", motivo: str = "") -> None:
+        """Pausa temporaria de atendimento (almoco, licenca pontual, treinamento)."""
+        raise ValueError(f"Barbeiro no estado '{self.nome}' nao pode entrar em pausa diretamente")
+
+    def desativar(self, barbeiro: "barbeiro") -> None:
+        """Inativacao cadastral do barbeiro."""
+        barbeiro.definir_estado(EstadoInativo())
+
+    def reativar(self, barbeiro: "barbeiro") -> None:
+        """Reativacao de barbeiro inativo."""
+        raise ValueError(f"Barbeiro no estado '{self.nome}' ja se encontra ativo")
+
+
+class EstadoDisponivel(EstadoBarbeiro):
+    """Estado em que o barbeiro esta ativo e apto para receber agendamentos conforme sua jornada."""
+
+    @property
+    def nome(self) -> str:
+        return "DISPONIVEL"
+
+    def pode_atender(self, barbeiro: "barbeiro", data_hora, duracao_minutos: int = 0) -> bool:
+        return barbeiro.jornada.contem_horario(data_hora, duracao_minutos)
+
+    def validar_agendamento(self, barbeiro: "barbeiro", data_hora, duracao_minutos: int = 0) -> None:
+        barbeiro.jornada.validar_atendimento(data_hora, duracao_minutos)
+
+    def entrar_em_ferias(self, barbeiro: "barbeiro") -> None:
+        barbeiro.definir_estado(EstadoEmFerias())
+
+    def pausar(self, barbeiro: "barbeiro", motivo: str = "") -> None:
+        barbeiro.definir_estado(EstadoEmPausa(motivo=motivo))
+
+    def desativar(self, barbeiro: "barbeiro") -> None:
+        barbeiro.definir_estado(EstadoInativo())
+
+    def retornar_ao_trabalho(self, barbeiro: "barbeiro") -> None:
+        # Idempotente: ja esta ativo e disponivel
+        pass
+
+
+class EstadoEmFerias(EstadoBarbeiro):
+    """Estado em que o barbeiro esta em periodo de ferias regulamentares."""
+
+    @property
+    def nome(self) -> str:
+        return "EM_FERIAS"
+
+    def pode_atender(self, barbeiro: "barbeiro", data_hora, duracao_minutos: int = 0) -> bool:
+        return False
+
+    def validar_agendamento(self, barbeiro: "barbeiro", data_hora, duracao_minutos: int = 0) -> None:
+        raise ValueError("Barbeiro encontra-se em periodo de ferias e nao pode receber agendamentos")
+
+    def retornar_ao_trabalho(self, barbeiro: "barbeiro") -> None:
+        barbeiro.definir_estado(EstadoDisponivel())
+
+    def entrar_em_ferias(self, barbeiro: "barbeiro") -> None:
+        raise ValueError("Barbeiro ja se encontra em ferias")
+
+    def pausar(self, barbeiro: "barbeiro", motivo: str = "") -> None:
+        raise ValueError("Barbeiro em ferias nao pode ser colocado em pausa")
+
+
+class EstadoEmPausa(EstadoBarbeiro):
+    """Estado de afastamento pontual ou intervalo (almoco, treinamento, emergencia)."""
+
+    def __init__(self, motivo: str = ""):
+        self.motivo = motivo
+
+    @property
+    def nome(self) -> str:
+        return "EM_PAUSA"
+
+    def pode_atender(self, barbeiro: "barbeiro", data_hora, duracao_minutos: int = 0) -> bool:
+        return False
+
+    def validar_agendamento(self, barbeiro: "barbeiro", data_hora, duracao_minutos: int = 0) -> None:
+        detalhe = f": {self.motivo}" if self.motivo else ""
+        raise ValueError(f"Barbeiro temporariamente ausente{detalhe}")
+
+    def retornar_ao_trabalho(self, barbeiro: "barbeiro") -> None:
+        barbeiro.definir_estado(EstadoDisponivel())
+
+    def pausar(self, barbeiro: "barbeiro", motivo: str = "") -> None:
+        raise ValueError("Barbeiro ja esta em pausa")
+
+    def entrar_em_ferias(self, barbeiro: "barbeiro") -> None:
+        raise ValueError("Barbeiro em pausa deve retornar ao trabalho antes de entrar em ferias")
+
+
+class EstadoInativo(EstadoBarbeiro):
+    """Estado em que o barbeiro foi desativado do sistema."""
+
+    @property
+    def nome(self) -> str:
+        return "INATIVO"
+
+    def pode_atender(self, barbeiro: "barbeiro", data_hora, duracao_minutos: int = 0) -> bool:
+        return False
+
+    def validar_agendamento(self, barbeiro: "barbeiro", data_hora, duracao_minutos: int = 0) -> None:
+        raise ValueError("Barbeiro inativo no sistema nao pode receber agendamentos")
+
+    def entrar_em_ferias(self, barbeiro: "barbeiro") -> None:
+        raise ValueError("Barbeiro inativo precisa ser reativado primeiro")
+
+    def pausar(self, barbeiro: "barbeiro", motivo: str = "") -> None:
+        raise ValueError("Barbeiro inativo precisa ser reativado primeiro")
+
+    def reativar(self, barbeiro: "barbeiro") -> None:
+        barbeiro.definir_estado(EstadoDisponivel())
+
+    def desativar(self, barbeiro: "barbeiro") -> None:
+        # Idempotente
+        pass
+
+
 class barbeiro:
     def __init__(
         self,
@@ -115,9 +262,11 @@ class barbeiro:
         horario_fim="18:00",
         dias_trabalho="0,1,2,3,4,5",
         jornada: JornadaTrabalho | None = None,
+        estado: EstadoBarbeiro | None = None,
     ):
         self.id = id
         self.nome = nome
+        self._estado: EstadoBarbeiro = estado if estado is not None else EstadoDisponivel()
         if jornada is not None:
             self.jornada = jornada
         else:
@@ -129,6 +278,34 @@ class barbeiro:
                 horario_fim=horario_fim,
                 dias_trabalho=dias_trabalho,
             )
+
+    @property
+    def estado(self) -> EstadoBarbeiro:
+        if not hasattr(self, "_estado") or self._estado is None:
+            self._estado = EstadoDisponivel()
+        return self._estado
+
+    @property
+    def status(self) -> str:
+        return self.estado.nome
+
+    def definir_estado(self, novo_estado: EstadoBarbeiro) -> None:
+        self._estado = novo_estado
+
+    def entrar_em_ferias(self) -> None:
+        self.estado.entrar_em_ferias(self)
+
+    def retornar_ao_trabalho(self) -> None:
+        self.estado.retornar_ao_trabalho(self)
+
+    def pausar(self, motivo: str = "") -> None:
+        self.estado.pausar(self, motivo=motivo)
+
+    def desativar(self) -> None:
+        self.estado.desativar(self)
+
+    def reativar(self) -> None:
+        self.estado.reativar(self)
 
     @property
     def jornada(self) -> JornadaTrabalho:
@@ -160,10 +337,10 @@ class barbeiro:
         return self.jornada.obter_dias()
 
     def pode_atender(self, data_hora, duracao_minutos: int = 0) -> bool:
-        return self.jornada.contem_horario(data_hora, duracao_minutos)
+        return self.estado.pode_atender(self, data_hora, duracao_minutos)
 
     def validar_agendamento(self, data_hora, duracao_minutos: int = 0):
-        self.jornada.validar_atendimento(data_hora, duracao_minutos)
+        self.estado.validar_agendamento(self, data_hora, duracao_minutos)
 
     def adicionar_agendamento(self, agendamento):
         duracao = getattr(agendamento.servico, "duracao", 0) if hasattr(agendamento, "servico") else 0

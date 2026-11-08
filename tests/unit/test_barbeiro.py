@@ -1,6 +1,19 @@
 import pytest
 from datetime import datetime
-from BarberTime.domain.model import barbeiro, Barbeiro, HorarioTrabalho, JornadaTrabalho, cliente, servico, Agendamento
+from BarberTime.domain.model import (
+    barbeiro,
+    Barbeiro,
+    HorarioTrabalho,
+    JornadaTrabalho,
+    cliente,
+    servico,
+    Agendamento,
+    EstadoBarbeiro,
+    EstadoDisponivel,
+    EstadoEmFerias,
+    EstadoEmPausa,
+    EstadoInativo,
+)
 
 def test_criar_barbeiro_com_horarios_padrao():
     b = barbeiro(id=1, nome="Jonathan")
@@ -181,4 +194,115 @@ def test_barbeiro_definir_nova_jornada_dinamica():
     # 07:30 agora e valido
     dt_cedo = datetime(2026, 10, 5, 7, 30)
     assert b.pode_atender(dt_cedo) is True
+
+# ---------------------------------------------------------------------------
+# Testes do Padrão GoF State — Ciclo de Vida e Disponibilidade do Barbeiro
+# ---------------------------------------------------------------------------
+
+def test_estado_inicial_do_barbeiro_e_disponivel():
+    b = barbeiro(id=1, nome="Jonathan")
+    assert isinstance(b.estado, EstadoDisponivel)
+    assert b.status == "DISPONIVEL"
+    dt_valida = datetime(2026, 10, 5, 10, 0)
+    assert b.pode_atender(dt_valida) is True
+
+
+def test_transicao_para_estado_em_ferias_bloqueia_agendamentos():
+    b = barbeiro(id=1, nome="Jonathan", horario_inicio="08:00", horario_fim="18:00")
+    b.entrar_em_ferias()
+
+    assert isinstance(b.estado, EstadoEmFerias)
+    assert b.status == "EM_FERIAS"
+
+    # Mesmo dentro do horario regular de expediente, ferias bloqueiam
+    dt_valida = datetime(2026, 10, 5, 10, 0)
+    assert b.pode_atender(dt_valida, duracao_minutos=30) is False
+
+    with pytest.raises(ValueError, match="periodo de ferias"):
+        b.validar_agendamento(dt_valida, duracao_minutos=30)
+
+    # Bloqueia tambem ao adicionar agendamento direto
+    c = cliente(id=10, nome="Marcos")
+    s = servico(id=1, nome="Corte", duracao=30, preco=50.0)
+    agendamento = Agendamento(id=1, cliente=c, barbeiro=b, servico=s, data_hora=dt_valida)
+    with pytest.raises(ValueError, match="periodo de ferias"):
+        b.adicionar_agendamento(agendamento)
+
+
+def test_retorno_ao_trabalho_apos_ferias_restaura_disponibilidade():
+    b = barbeiro(id=1, nome="Jonathan", horario_inicio="08:00", horario_fim="18:00")
+    b.entrar_em_ferias()
+    assert b.status == "EM_FERIAS"
+
+    b.retornar_ao_trabalho()
+    assert isinstance(b.estado, EstadoDisponivel)
+    assert b.status == "DISPONIVEL"
+
+    # Agora volta a atender normalmente
+    dt_valida = datetime(2026, 10, 5, 10, 0)
+    assert b.pode_atender(dt_valida, duracao_minutos=30) is True
+    b.validar_agendamento(dt_valida, duracao_minutos=30)
+
+
+def test_estado_em_pausa_bloqueia_atendimento_com_motivo():
+    b = barbeiro(id=1, nome="Jonathan")
+    b.pausar(motivo="Horario de almoco")
+
+    assert isinstance(b.estado, EstadoEmPausa)
+    assert b.status == "EM_PAUSA"
+
+    dt_valida = datetime(2026, 10, 5, 12, 30)
+    assert b.pode_atender(dt_valida) is False
+    with pytest.raises(ValueError, match="Barbeiro temporariamente ausente: Horario de almoco"):
+        b.validar_agendamento(dt_valida)
+
+    # Retorna ao trabalho
+    b.retornar_ao_trabalho()
+    assert b.status == "DISPONIVEL"
+    assert b.pode_atender(dt_valida) is True
+
+
+def test_desativacao_e_reativacao_do_barbeiro():
+    b = barbeiro(id=1, nome="Jonathan")
+    b.desativar()
+
+    assert isinstance(b.estado, EstadoInativo)
+    assert b.status == "INATIVO"
+
+    dt_valida = datetime(2026, 10, 5, 10, 0)
+    assert b.pode_atender(dt_valida) is False
+    with pytest.raises(ValueError, match="Barbeiro inativo no sistema"):
+        b.validar_agendamento(dt_valida)
+
+    # Nao pode ir para ferias direto do estado inativo
+    with pytest.raises(ValueError, match="Barbeiro inativo precisa ser reativado primeiro"):
+        b.entrar_em_ferias()
+
+    # Reativar
+    b.reativar()
+    assert b.status == "DISPONIVEL"
+    assert b.pode_atender(dt_valida) is True
+
+
+def test_transicoes_invalidas_entre_estados():
+    b = barbeiro(id=1, nome="Jonathan")
+    b.entrar_em_ferias()
+
+    # Tentar entrar em ferias novamente
+    with pytest.raises(ValueError, match="ja se encontra em ferias"):
+        b.entrar_em_ferias()
+
+    # Tentar pausar enquanto esta em ferias
+    with pytest.raises(ValueError, match="Barbeiro em ferias nao pode ser colocado em pausa"):
+        b.pausar()
+
+
+def test_injecao_polimorfica_de_estado_no_construtor():
+    # Comprova que o contexto aceita qualquer subtipo de EstadoBarbeiro
+    estado_ferias = EstadoEmFerias()
+    b = barbeiro(id=99, nome="Carlos", estado=estado_ferias)
+    assert b.estado is estado_ferias
+    assert b.status == "EM_FERIAS"
+    dt_valida = datetime(2026, 10, 5, 10, 0)
+    assert b.pode_atender(dt_valida) is False
 
