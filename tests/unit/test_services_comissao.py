@@ -7,6 +7,8 @@ from BarberTime.domain.model import (
     ComissaoBarbeiroSenior,
     ComissaoBarbeiroJunior,
     ComissaoPercentualFixo,
+    ComissaoComBonusFixo,
+    ComissaoComDescontoFixo,
 )
 from BarberTime.adapters.repository import (
     FakeBarbeiroRepository,
@@ -239,3 +241,52 @@ def test_service_estrategia_tem_precedencia_sobre_percentual():
     )
     # Senior sempre aplica 15%, nao o percentual=5% passado
     assert comissao["valor"] == 15.0
+
+
+# ---------------------------------------------------------------------------
+# Novos testes — GoF Decorator: gerar_comissao aceita decoradores
+# ---------------------------------------------------------------------------
+
+def test_service_gerar_comissao_com_decorador_bonus_fixo():
+    """Decorador de bonus fixo via service: 10% de R$50 = R$5 + R$5 = R$10."""
+    barbeiros, atendimentos, comissoes = preparar_repos()
+    services.registrar_atendimento(
+        1, 1, servico(1, "Corte", 30, 50.0), datetime(2026, 10, 5, 10, 0),
+        atendimentos, barbeiros,
+    )
+    services.concluir_atendimento(1, atendimentos)
+
+    comissao = services.gerar_comissao(
+        comissao_id=1,
+        atendimento_id=1,
+        atendimento_repo=atendimentos,
+        comissao_repo=comissoes,
+        estrategia=ComissaoComBonusFixo(ComissaoPercentualFixo(10.0), 5.0),
+    )
+    assert comissao["valor"] == 10.0
+    assert comissao["percentual"] is None
+
+
+def test_service_gerar_comissao_com_decorador_em_cadeia():
+    """Decoradores compostos via service: 10% - R$5 insumos + R$10 bonus = R$10."""
+    barbeiros, atendimentos, comissoes = preparar_repos()
+    services.registrar_atendimento(
+        1, 1, servico(1, "Corte", 30, 50.0), datetime(2026, 10, 5, 10, 0),
+        atendimentos, barbeiros,
+    )
+    services.concluir_atendimento(1, atendimentos)
+
+    cadeia = ComissaoComBonusFixo(
+        ComissaoComDescontoFixo(ComissaoPercentualFixo(10.0), 5.0),
+        10.0,
+    )
+    comissao = services.gerar_comissao(
+        comissao_id=1,
+        atendimento_id=1,
+        atendimento_repo=atendimentos,
+        comissao_repo=comissoes,
+        estrategia=cadeia,
+    )
+    # 10% de R$50 = R$5 - R$5 + R$10 = R$10
+    assert comissao["valor"] == 10.0
+    assert comissao["percentual"] is None

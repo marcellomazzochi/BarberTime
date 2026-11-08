@@ -14,6 +14,11 @@ from BarberTime.domain.model import (
     ComissaoPercentualFixo,
     ComissaoBarbeiroSenior,
     ComissaoBarbeiroJunior,
+    # Decoradores GoF
+    DecoradorComissao,
+    ComissaoComBonusFixo,
+    ComissaoComDescontoFixo,
+    ComissaoComBonusPercentual,
 )
 
 
@@ -287,4 +292,102 @@ def test_nova_estrategia_sem_modificar_comissao(monkeypatch):
 
     comissao = Comissao(id=1, atendimento=atendimento, estrategia=ComissaoFidelidade())
     # 20% de R$50 = R$10
+    assert comissao.valor == 10.0
+
+
+# ---------------------------------------------------------------------------
+# Novos testes — GoF Decorator: composição dinâmica de bônus e taxas
+# ---------------------------------------------------------------------------
+
+def test_decorador_e_subclasse_de_estrategia_comissao():
+    """Decoradores implementam o mesmo contrato EstrategiaComissao."""
+    decorador = ComissaoComBonusFixo(ComissaoPercentualFixo(10.0), 5.0)
+    assert isinstance(decorador, EstrategiaComissao)
+    assert isinstance(decorador, DecoradorComissao)
+
+
+def test_decorador_abstrato_nao_pode_ser_instanciado():
+    """DecoradorComissao e abstrata; instanciar diretamente deve lancar TypeError."""
+    with pytest.raises(TypeError):
+        DecoradorComissao(ComissaoPercentualFixo(10.0))
+
+
+def test_bonus_fixo_adiciona_valor_sobre_estrategia_base():
+    """10% de R$100 = R$10 + bonus de R$5 = R$15."""
+    decorador = ComissaoComBonusFixo(ComissaoPercentualFixo(10.0), 5.0)
+    assert decorador.calcular(100.0) == 15.0
+
+
+def test_desconto_fixo_deduz_valor_e_nao_fica_negativo():
+    """10% de R$100 = R$10 - desconto de R$5 = R$5."""
+    decorador = ComissaoComDescontoFixo(ComissaoPercentualFixo(10.0), 5.0)
+    assert decorador.calcular(100.0) == 5.0
+    # 10% de R$30 = R$3 - R$5 => piso em R$0 (nunca negativo)
+    assert decorador.calcular(30.0) == 0.0
+
+
+def test_bonus_percentual_soma_sobre_preco_do_servico():
+    """10% de R$100 = R$10 + bonus de 5% sobre R$100 = R$5 => R$15."""
+    decorador = ComissaoComBonusPercentual(ComissaoPercentualFixo(10.0), 5.0)
+    assert decorador.calcular(100.0) == 15.0
+
+
+def test_decoradores_compostos_em_cadeia():
+    """Bonus fixo envolve desconto fixo que envolve percentual fixo (composição em cadeia)."""
+    cadeia = ComissaoComBonusFixo(
+        ComissaoComDescontoFixo(ComissaoPercentualFixo(10.0), 5.0),
+        10.0,
+    )
+    # 10% de R$100 = R$10 - R$5 desconto + R$10 bonus = R$15
+    assert cadeia.calcular(100.0) == 15.0
+
+
+def test_desconto_fixo_reproduz_estrategia_junior():
+    """O comportamento '10% - R$5 de insumos' (junior) agora é expresso por composição."""
+    junior = ComissaoBarbeiroJunior()
+    decorador = ComissaoComDescontoFixo(ComissaoPercentualFixo(10.0), 5.0)
+    for preco in [30.0, 50.0, 100.0, 200.0]:
+        assert decorador.calcular(preco) == junior.calcular(preco)
+
+
+def test_comissao_aceita_decorador_como_estrategia():
+    """A entidade Comissao aceita decorador sem qualquer modificação (transparência)."""
+    atendimento = criar_atendimento()
+    atendimento.concluir()
+
+    decorador = ComissaoComBonusFixo(ComissaoPercentualFixo(10.0), 5.0)
+    comissao = Comissao(id=1, atendimento=atendimento, estrategia=decorador)
+    # 10% de R$50 = R$5 + R$5 bonus = R$10
+    assert comissao.valor == 10.0
+    # Decorador não é PercentualFixo, logo não expõe percentual único
+    assert comissao.percentual is None
+
+
+def test_decorador_valida_bonus_negativo():
+    with pytest.raises(ValueError, match="Bonus de comissao"):
+        ComissaoComBonusFixo(ComissaoPercentualFixo(10.0), -1.0)
+
+
+def test_decorador_valida_desconto_negativo():
+    with pytest.raises(ValueError, match="Desconto de comissao"):
+        ComissaoComDescontoFixo(ComissaoPercentualFixo(10.0), -1.0)
+
+
+def test_novo_decorador_sem_modificar_comissao(monkeypatch):
+    """OCP: é possível criar um novo decorador sem alterar Comissao ou os existentes."""
+
+    class ComissaoComBonusDuplicado(DecoradorComissao):
+        """Decorador hipotético: dobra a comissão base (promoção pontual)."""
+        def calcular(self, preco_servico: float) -> float:
+            return round(self._estrategia.calcular(preco_servico) * 2, 2)
+
+    atendimento = criar_atendimento()
+    atendimento.concluir()
+
+    comissao = Comissao(
+        id=1,
+        atendimento=atendimento,
+        estrategia=ComissaoComBonusDuplicado(ComissaoPercentualFixo(10.0)),
+    )
+    # (10% de R$50 = R$5) * 2 = R$10
     assert comissao.valor == 10.0
