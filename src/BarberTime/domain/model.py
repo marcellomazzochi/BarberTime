@@ -541,6 +541,83 @@ class ComissaoBarbeiroJunior(EstrategiaComissao):
 
 
 # ---------------------------------------------------------------------------
+# GoF Decorator — Composição dinâmica de bônus e taxas sobre a comissão
+# ---------------------------------------------------------------------------
+class DecoradorComissao(EstrategiaComissao):
+    """Decorator (abstrato) que envolve uma EstrategiaComissao e delega o calculo.
+
+    Implementa o mesmo contrato de EstrategiaComissao, permitindo empilhar
+    decoradores em cadeia e combinar bônus/descontos sem multiplicar subclasses.
+    """
+
+    def __init__(self, estrategia: EstrategiaComissao):
+        self._estrategia = estrategia
+
+    @property
+    def estrategia(self) -> EstrategiaComissao:
+        return self._estrategia
+
+    @abc.abstractmethod
+    def calcular(self, preco_servico: float) -> float:
+        raise NotImplementedError
+
+
+class ComissaoComBonusFixo(DecoradorComissao):
+    """Decorador concreto: soma um bonus fixo (em reais) a comissao base."""
+
+    def __init__(self, estrategia: EstrategiaComissao, bonus: float = 0.0):
+        super().__init__(estrategia)
+        if not isinstance(bonus, (int, float)) or isinstance(bonus, bool) or bonus < 0:
+            raise ValueError("Bonus de comissao deve ser um numero nao negativo")
+        self._bonus = float(bonus)
+
+    @property
+    def bonus(self) -> float:
+        return self._bonus
+
+    def calcular(self, preco_servico: float) -> float:
+        base = self._estrategia.calcular(preco_servico)
+        return round(base + self._bonus, 2)
+
+
+class ComissaoComDescontoFixo(DecoradorComissao):
+    """Decorador concreto: deduz uma taxa/desconto fixo (ex.: insumos)."""
+
+    def __init__(self, estrategia: EstrategiaComissao, desconto: float = 0.0):
+        super().__init__(estrategia)
+        if not isinstance(desconto, (int, float)) or isinstance(desconto, bool) or desconto < 0:
+            raise ValueError("Desconto de comissao deve ser um numero nao negativo")
+        self._desconto = float(desconto)
+
+    @property
+    def desconto(self) -> float:
+        return self._desconto
+
+    def calcular(self, preco_servico: float) -> float:
+        base = self._estrategia.calcular(preco_servico)
+        return round(max(0.0, base - self._desconto), 2)
+
+
+class ComissaoComBonusPercentual(DecoradorComissao):
+    """Decorador concreto: soma um bonus percentual sobre o preco do servico."""
+
+    def __init__(self, estrategia: EstrategiaComissao, percentual):
+        super().__init__(estrategia)
+        if isinstance(percentual, PercentualComissao):
+            self._percentual = percentual
+        else:
+            self._percentual = PercentualComissao(percentual)
+
+    @property
+    def percentual_bonus(self) -> PercentualComissao:
+        return self._percentual
+
+    def calcular(self, preco_servico: float) -> float:
+        base = self._estrategia.calcular(preco_servico)
+        return round(base + self._percentual.aplicar(preco_servico), 2)
+
+
+# ---------------------------------------------------------------------------
 
 class Comissao:
     def __init__(
