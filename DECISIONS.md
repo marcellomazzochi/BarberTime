@@ -442,7 +442,7 @@ Em vez de poluir a entidade `barbeiro` com diversas variáveis booleanas e condi
 |---|---|---|
 | Implementação do padrão State e testes no domínio | `c16b32f` | 08/11/2026 |
 | Integração na camada de serviços e testes de serviço | `aacb622` | 10/11/2026 |
-| Documentação em `docs/gof.md` e autorrelato no `DECISIONS.md` | *(commit a seguir)* | 10/11/2026 |
+| Documentação em `docs/gof.md` e autorrelato no `DECISIONS.md` | `2e1ea83` | 10/11/2026 |
 
 **Decisão técnica (uma frase de justificativa):**
 Apliquei o padrão GoF State para encapsular o ciclo de vida e as regras de disponibilidade do barbeiro em classes dedicadas, garantindo que o bloqueio de agendamentos em férias ou pausas ocorra sem encher a entidade raiz de desvios condicionais procedurais (`if/else`) e protegendo as transições válidas entre estados.
