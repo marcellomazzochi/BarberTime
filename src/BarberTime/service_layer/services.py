@@ -105,6 +105,40 @@ def validar_horario_atendimento(
         "mensagem": "Horario disponivel no expediente do barbeiro",
     }
 
+def alterar_status_barbeiro(
+    barbeiro_id: int,
+    acao: str,
+    motivo: str = "",
+    repo=None,
+    session=None,
+) -> dict:
+    b = repo.get(barbeiro_id)
+    if b is None:
+        raise ValueError(f"Barbeiro com id {barbeiro_id} nao encontrado")
+
+    acao_lower = acao.strip().lower()
+    if acao_lower == "ferias":
+        b.entrar_em_ferias()
+    elif acao_lower in ("retornar", "trabalho", "disponivel"):
+        b.retornar_ao_trabalho()
+    elif acao_lower == "pausa":
+        b.pausar(motivo=motivo)
+    elif acao_lower in ("desativar", "inativar"):
+        b.desativar()
+    elif acao_lower == "reativar":
+        b.reativar()
+    else:
+        raise ValueError(f"Acao de status invalida: '{acao}'")
+
+    if session is not None:
+        session.commit()
+
+    return {
+        "id": b.id,
+        "nome": b.nome,
+        "status": b.status,
+    }
+
 
 def _atendimento_para_dict(atendimento: Atendimento) -> dict:
     return {

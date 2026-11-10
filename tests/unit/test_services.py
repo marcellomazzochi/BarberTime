@@ -58,3 +58,35 @@ def test_service_validar_horario_atendimento():
     dt_invalida = datetime(2026, 10, 5, 19, 0)
     with pytest.raises(ValueError, match="apos o encerramento do expediente"):
         services.validar_horario_atendimento(barbeiro_id=1, data_hora=dt_invalida, duracao_minutos=30, repo=repo)
+
+def test_service_alterar_status_barbeiro_ferias_e_retorno():
+    repo = FakeBarbeiroRepository()
+    services.cadastrar_barbeiro(id=1, nome="Jonathan", repo=repo)
+
+    res_ferias = services.alterar_status_barbeiro(barbeiro_id=1, acao="ferias", repo=repo)
+    assert res_ferias["status"] == "EM_FERIAS"
+
+    b = repo.get(1)
+    assert b.status == "EM_FERIAS"
+
+    res_retorno = services.alterar_status_barbeiro(barbeiro_id=1, acao="retornar", repo=repo)
+    assert res_retorno["status"] == "DISPONIVEL"
+    assert b.status == "DISPONIVEL"
+
+
+def test_service_validar_horario_bloqueado_quando_barbeiro_em_ferias():
+    repo = FakeBarbeiroRepository()
+    services.cadastrar_barbeiro(id=1, nome="Jonathan", horario_inicio="08:00", horario_fim="18:00", repo=repo)
+    services.alterar_status_barbeiro(barbeiro_id=1, acao="ferias", repo=repo)
+
+    dt_valida = datetime(2026, 10, 5, 11, 0)
+    with pytest.raises(ValueError, match="periodo de ferias"):
+        services.validar_horario_atendimento(barbeiro_id=1, data_hora=dt_valida, duracao_minutos=30, repo=repo)
+
+
+def test_service_alterar_status_acao_invalida():
+    repo = FakeBarbeiroRepository()
+    services.cadastrar_barbeiro(id=1, nome="Jonathan", repo=repo)
+    with pytest.raises(ValueError, match="Acao de status invalida"):
+        services.alterar_status_barbeiro(barbeiro_id=1, acao="voar_para_a_lua", repo=repo)
+
