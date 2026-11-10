@@ -407,3 +407,45 @@ A solução foi criar o `JornadaTrabalho`, um Value Object imutável (`@dataclas
 **Por que ficou assim:** Mantive os atributos `horario_inicio`, `horario_fim` e `dias_trabalho` como colunas diretas no `barbeiro` para não quebrar o mapeamento do SQLAlchemy imperativo — o ORM não chama o `__init__` ao hidratar objetos do banco, então as colunas precisam existir como atributos diretos. A propriedade `jornada` constrói e mantém o `JornadaTrabalho` sincronizado a partir dessas colunas. Não precisei mexer no banco nem no mapeamento dos colegas.
 
 **Uso de IA:** Usei o agente Antigravity para explorar o repositório, pensar no design do `JornadaTrabalho` e redigir a documentação. O código foi revisado por mim, os testes rodaram localmente (104 passando, CI verde) e os commits foram feitos por mim.
+
+---
+
+## Fase 2 — Checkpoint 3 (Padrões de Projeto GoF)
+
+### Integrante: Jonathan do Nascimento Melo (`JonathanMelo0`)
+**Agregado sob minha responsabilidade:** Barbeiro
+
+---
+
+#### Checkpoint 3 — Aplicação do Padrão GoF State no Agregado Barbeiro
+
+**Padrão aplicado:** State (GoF Comportamental)
+
+**O que eu fiz:**
+Para este Checkpoint 3, modelei e implementei o padrão GoF State para tratar o ciclo de vida e o status de disponibilidade do barbeiro. No mundo real, um barbeiro não atende clientes apenas porque o relógio está dentro do expediente; ele transita por diferentes momentos operacionais: atendimento normal (`DISPONIVEL`), férias regulamentares (`EM_FERIAS`), pausas pontuais de almoço ou capacitação (`EM_PAUSA`), ou inativação do profissional (`INATIVO`).
+
+Em vez de poluir a entidade `barbeiro` com diversas variáveis booleanas e condicionais (`if/elif/else`), criei a hierarquia abstrata `EstadoBarbeiro` e as classes concretas para cada estado. A entidade `barbeiro` passa a delegar as operações `pode_atender` e `validar_agendamento` para o seu estado atual. Quando o barbeiro entra em férias (`barbeiro.entrar_em_ferias()`), qualquer tentativa de agendamento é imediatamente recusada com mensagem clara, mesmo que o horário caia em um dia e hora de expediente habitual. Também expus a operação na camada de serviços com `alterar_status_barbeiro`.
+
+**Arquivos alterados:**
+
+| Arquivo | O que mudou |
+|---|---|
+| `src/BarberTime/domain/model.py` | Implementação da classe abstrata `EstadoBarbeiro`, das subclasses `EstadoDisponivel`, `EstadoEmFerias`, `EstadoEmPausa` e `EstadoInativo`, e refatoração da entidade `barbeiro` para delegar para o estado atual com métodos de transição. |
+| `src/BarberTime/service_layer/services.py` | Implementação do caso de uso `alterar_status_barbeiro` e integração das mensagens de erro na validação de agendamento. |
+| `tests/unit/test_barbeiro.py` | 7 novos testes unitários validando estado inicial, bloqueio por férias, retorno de férias, pausa com motivo, desativação/reativação, transições inválidas e injeção polimórfica de estado. |
+| `tests/unit/test_services.py` | 3 novos testes validando alteração de status via serviço, bloqueio de horário quando o barbeiro está de férias e rejeição de ações inválidas. |
+| `docs/gof.md` | Documentação completa do padrão State contendo contexto, problema real resolvido, justificativa e alternativas descartadas, mapeamento dos participantes, diagrama de classes em Mermaid, testes e trade-offs. |
+
+**Hashes dos commits:**
+
+| Marco | Hash | Data |
+|---|---|---|
+| Implementação do padrão State e testes no domínio | `c16b32f` | 08/11/2026 |
+| Integração na camada de serviços e testes de serviço | `aacb622` | 10/11/2026 |
+| Documentação em `docs/gof.md` e autorrelato no `DECISIONS.md` | *(commit a seguir)* | 10/11/2026 |
+
+**Decisão técnica (uma frase de justificativa):**
+Apliquei o padrão GoF State para encapsular o ciclo de vida e as regras de disponibilidade do barbeiro em classes dedicadas, garantindo que o bloqueio de agendamentos em férias ou pausas ocorra sem encher a entidade raiz de desvios condicionais procedurais (`if/else`) e protegendo as transições válidas entre estados.
+
+**Declaração de Uso de IA:**
+Utilizei o assistente de IA Antigravity como suporte para discutir a melhor modelagem GoF para o agregado Barbeiro (avaliando State vs Strategy), desenhar o diagrama de classes em Mermaid e redigir a documentação detalhada em `docs/gof.md`. A implementação, os testes e os commits foram executados e validados por mim, garantindo que a suíte completa com 114 testes passasse com 100% de sucesso e CI verde.
