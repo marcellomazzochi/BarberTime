@@ -479,7 +479,7 @@ Neste Checkpoint 3, identifiquei que o Strategy (aplicado no Checkpoint 2) troca
 |---|---|
 | Implementação do Decorator no domínio (`model.py`) | `d1f1e47` |
 | Testes unitários do Decorator (domínio + serviço) | `27992b5` |
-| Documentação em `docs/gof.md` e autorrelato no `DECISIONS.md` | [INSERIR HASH] |
+| Documentação em `docs/gof.md` e autorrelato no `DECISIONS.md` | `7070602` |
 
 **Decisão técnica (uma frase):**
 Apliquei o padrão GoF Decorator para permitir compor bônus e taxas dinâmicos sobre a comissão base por delegação em cadeia, eliminando a explosão combinatória de subclasses que surgiria se cada combinação de repasse virasse uma nova `EstrategiaComissao`.
