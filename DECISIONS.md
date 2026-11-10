@@ -449,3 +449,40 @@ Apliquei o padrão GoF State para encapsular o ciclo de vida e as regras de disp
 
 **Declaração de Uso de IA:**
 Utilizei o assistente de IA Antigravity como suporte para discutir a melhor modelagem GoF para o agregado Barbeiro (avaliando State vs Strategy), desenhar o diagrama de classes em Mermaid e redigir a documentação detalhada em `docs/gof.md`. A implementação, os testes e os commits foram executados e validados por mim, garantindo que a suíte completa com 114 testes passasse com 100% de sucesso e CI verde.
+
+---
+
+### Integrante: Ruan do Nascimento Silva (`ruanlov`)
+**Agregado sob minha responsabilidade:** Comissão
+
+---
+
+#### Checkpoint 3 — Aplicação do Padrão GoF Decorator no Agregado Comissão
+
+**Padrão aplicado:** Decorator (GoF Estrutural)
+
+**O que eu fiz:**
+Neste Checkpoint 3, identifiquei que o Strategy (aplicado no Checkpoint 2) trocava algoritmos completos de comissão, mas não resolvia a *combinação* de complementos transitórios — bônus de meta, descontos de insumos e promoções pontuais — sem gerar uma explosão de subclasses (o `ComissaoBarbeiroJunior` já escondia um desconto de insumos embutido). Implementei o padrão **Decorator** criando a hierarquia `DecoradorComissao` e os decoradores concretos `ComissaoComBonusFixo`, `ComissaoComDescontoFixo` e `ComissaoComBonusPercentual`, que envolvem qualquer `EstrategiaComissao` e podem ser empilhados em cadeia. Por implementarem o mesmo contrato, `Comissao` e `gerar_comissao` os consomem sem nenhuma alteração.
+
+**Arquivos alterados:**
+
+| Arquivo | O que mudou |
+|---|---|
+| `src/BarberTime/domain/model.py` | Adição de `DecoradorComissao` (ABC) e três decoradores concretos (`ComissaoComBonusFixo`, `ComissaoComDescontoFixo`, `ComissaoComBonusPercentual`). |
+| `tests/unit/test_comissao.py` | 11 novos testes de domínio exercitando composição, transparência e validações. |
+| `tests/unit/test_services_comissao.py` | 2 novos testes de serviço usando decoradores via `gerar_comissao`. |
+| `docs/gof.md` | Documentação completa do padrão Decorator com os 7 itens do barema. |
+
+**Hashes dos commits:**
+
+| Marco | Hash |
+|---|---|
+| Implementação do Decorator no domínio (`model.py`) | `d1f1e47` |
+| Testes unitários do Decorator (domínio + serviço) | `27992b5` |
+| Documentação em `docs/gof.md` e autorrelato no `DECISIONS.md` | [INSERIR HASH] |
+
+**Decisão técnica (uma frase):**
+Apliquei o padrão GoF Decorator para permitir compor bônus e taxas dinâmicos sobre a comissão base por delegação em cadeia, eliminando a explosão combinatória de subclasses que surgiria se cada combinação de repasse virasse uma nova `EstrategiaComissao`.
+
+**Declaração de Uso de IA:**
+Utilizei o auxílio de ferramentas de IA generativa durante o desenvolvimento. Todo o conteúdo gerado foi lido e aprovado por mim.

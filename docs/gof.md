@@ -177,3 +177,135 @@ Foram implementados testes unitários tanto na camada de domínio quanto na cama
 #### 7.2 Custos e Trade-offs
 - **Proliferação de classes no módulo:** Adicionaram-se cinco novas classes (`EstadoBarbeiro`, `EstadoDisponivel`, `EstadoEmFerias`, `EstadoEmPausa`, `EstadoInativo`). Para um sistema excessivamente simples onde barbeiros nunca se ausentam, isso representaria uma sobrecarga estrutural. Porém, para uma barbearia com operação real, essa divisão reflete o domínio com fidelidade.
 - **Camada adicional de indireção:** O método `barbeiro.validar_agendamento` delega para `self.estado.validar_agendamento`, que por sua vez consulta a `jornada` do barbeiro quando disponível. Essa navegação de chamada é um custo consciente em troca de clareza e separação de responsabilidades.
+
+---
+
+## Seção: Ruan do Nascimento Silva — Agregado Comissão
+
+### 1. Nome e Categoria do Padrão
+
+* **Nome do Padrão:** Decorator
+* **Categoria:** Estrutural (*Structural Pattern*)
+* **Definição clássica (GoF):** *"Anexa responsabilidades adicionais a um objeto dinamicamente. Os decorators oferecem uma alternativa flexível ao uso de herança para estender funcionalidades."*
+
+---
+
+### 2. Contexto no Sistema e Problema que ele Resolve
+
+#### 2.1 Contexto do Agregado Comissão
+No Checkpoint 2 (SOLID), refatorei o cálculo de comissão com o padrão **Strategy**: a interface `EstrategiaComissao` e as implementações `ComissaoPercentualFixo` (percentual genérico), `ComissaoBarbeiroSenior` (15% fixo) e `ComissaoBarbeiroJunior` (10% com desconto de R$ 5,00 de insumos). Cada política de repasse virou uma subclasse independente, e a entidade `Comissao` passou a receber a estratégia por injeção.
+
+#### 2.2 O Problema Real do Domínio
+O Strategy resolveu a troca de *algoritmos completos*, mas revelou um segundo problema: a barbearia vive ajustando o repasse com **complementos transitórios e combináveis** sobre a comissão base, e não apenas com políticas fechadas:
+
+1. **Bônus de meta:** no fim do mês, um barbeiro que superou a meta ganha um bônus fixo (ex.: R$ 10,00) ou percentual (ex.: +5%) sobre o repasse.
+2. **Taxas e insumos:** descontos de produtos consumidos no atendimento (lâminas, pomadas) que precisam ser deduzidos do valor.
+3. **Promoções pontuais:** dobrar a comissão num feriado, premiar serviço de alta complexidade, etc.
+
+Se cada combinação virasse uma nova subclasse de `EstrategiaComissao`, teríamos uma **explosão combinatória**: `JuniorComBonusDeMeta`, `SeniorComBonusDeMeta`, `JuniorComDescontoDeInsumosEBonusDeMeta`, e assim por diante. O problema concreto é exatamente a evidência disso: `ComissaoBarbeiroJunior` *já esconde* dentro dela um desconto fixo de insumos (10% − R$ 5,00), que é um comportamento ortogonal ao percentual e que não pode ser reaproveitado por outras estratégias sem duplicação.
+
+#### 2.3 Por que o design anterior não atendia
+- Cada nova combinação de bônus/taxa exigia **criar (e testar) uma nova subclasse inteira**, violando o OCP e o SRP (uma única classe passava a acumular o percentual *e* o desconto *e* o bônus).
+- O `ComissaoBarbeiroJunior` mistura no mesmo lugar a política percentual e a dedução de insumos, impossibilitando compor "percentual X + desconto Y + bônus Z" sem reescrever código.
+
+O **Decorator** resolve isso ao permitir *empilhar* responsabilidades em tempo de execução: uma estratégia base (`ComissaoPercentualFixo`) é envolvida por decoradores (`ComissaoComBonusFixo`, `ComissaoComDescontoFixo`, `ComissaoComBonusPercentual`) que adicionam/removem valores e podem ser combinados em cadeia.
+
+---
+
+### 3. Por que esse Padrão e Alternativas Consideradas
+
+#### 3.1 Alternativa Considerada: Factory Method
+* **Abordagem:** Uma `FabricaEstrategiaComissao` que recebe o "nível" do barbeiro (sênior/júnior) e devolve a estratégia pronta, encapsulando a decisão de *qual* classe instanciar.
+* **Por que foi descartada:** O Factory Method resolve bem *"qual objeto criar"*, mas não resolve o problema real que identifiquei: a **combinação** de comportamentos (percentual + bônus + desconto). Mesmo com uma fábrica, eu ainda precisaria de uma subclasse para cada combinação possível — a fábrica apenas esconderia a explosão combinatória, sem eliminá-la. Além disso, o Factory exigiria introduzir um atributo de "senioridade" no `barbeiro` (agregado de outro integrante), acoplando minha decisão ao modelo do colega. Como o Strategy já estava em uso e o problema era a *composição de complementos*, o Decorator — que é estrutural e compõe por delegação — foi a escolha semanticamente exata.
+
+---
+
+### 4. Participantes do Padrão Mapeados no Código Real
+
+| Participante GoF | Classe / Elemento Real | Localização | Papel no Sistema |
+|---|---|---|---|
+| **Component** | `EstrategiaComissao` (ABC) | `src/BarberTime/domain/model.py` | Interface comum do cálculo de comissão. Define `calcular(preco_servico) -> float`. |
+| **ConcreteComponent** | `ComissaoPercentualFixo` | `src/BarberTime/domain/model.py` | Objeto que calcula a comissão base (percentual fixo) e recebe os decoradores por composição. |
+| **Decorator (abstrato)** | `DecoradorComissao` | `src/BarberTime/domain/model.py` | Herda de `EstrategiaComissao`, guarda a referência ao componente/outro decorador e mantém `calcular` abstrato. |
+| **ConcreteDecorator** | `ComissaoComBonusFixo` | `src/BarberTime/domain/model.py` | Soma um bônus fixo (R$) ao resultado do componente envolvido. |
+| **ConcreteDecorator** | `ComissaoComDescontoFixo` | `src/BarberTime/domain/model.py` | Deduz uma taxa/desconto fixo (R$, ex.: insumos) com piso em R$ 0,00. |
+| **ConcreteDecorator** | `ComissaoComBonusPercentual` | `src/BarberTime/domain/model.py` | Soma um bônus percentual sobre o preço do serviço. |
+| **Client** | `Comissao` e `gerar_comissao` | `src/BarberTime/domain/model.py` / `src/BarberTime/service_layer/services.py` | Consomem qualquer `EstrategiaComissao` (base ou decorada) sem conhecer a composição interna. |
+
+---
+
+### 5. Diagrama de Classes (Mermaid)
+
+```mermaid
+classDiagram
+    class EstrategiaComissao {
+        <<abstract>>
+        +calcular(preco_servico) float
+    }
+
+    class ComissaoPercentualFixo {
+        -PercentualComissao _percentual
+        +calcular(preco_servico) float
+    }
+
+    class DecoradorComissao {
+        <<abstract>>
+        -EstrategiaComissao _estrategia
+        +calcular(preco_servico) float*
+    }
+
+    class ComissaoComBonusFixo {
+        -float _bonus
+        +calcular(preco_servico) float
+    }
+
+    class ComissaoComDescontoFixo {
+        -float _desconto
+        +calcular(preco_servico) float
+    }
+
+    class ComissaoComBonusPercentual {
+        -PercentualComissao _percentual
+        +calcular(preco_servico) float
+    }
+
+    class Comissao {
+        -EstrategiaComissao _estrategia
+        +float valor
+    }
+
+    EstrategiaComissao <|-- ComissaoPercentualFixo : implementa
+    EstrategiaComissao <|-- DecoradorComissao : implementa (mesmo contrato)
+    DecoradorComissao <|-- ComissaoComBonusFixo
+    DecoradorComissao <|-- ComissaoComDescontoFixo
+    DecoradorComissao <|-- ComissaoComBonusPercentual
+    DecoradorComissao o-- EstrategiaComissao : envolve (componente)
+    Comissao ..> EstrategiaComissao : usa
+```
+
+---
+
+### 6. Testes Automatizados que Exercitam o Padrão
+
+Os testes estão em `tests/unit/test_comissao.py` (domínio) e `tests/unit/test_services_comissao.py` (serviço). O teste central é **`test_decoradores_compostos_em_cadeia`**, que comprova a essência do Decorator ao empilhar `ComissaoComBonusFixo` sobre `ComissaoComDescontoFixo` sobre `ComissaoPercentualFixo` e verificar o resultado combinado (10% − R$ 5,00 + R$ 10,00 = R$ 15,00 sobre R$ 100,00). Complementam-no:
+
+* **`test_desconto_fixo_reproduz_estrategia_junior`** — mostra que o comportamento do `ComissaoBarbeiroJunior` agora é expressável por composição (`ComissaoComDescontoFixo(ComissaoPercentualFixo(10.0), 5.0)`), evidenciando a reutilização que o padrão destrava.
+* **`test_decorador_e_subclasse_de_estrategia_comissao`** e **`test_comissao_aceita_decorador_como_estrategia`** — provam a *transparência*: o decorador é indistinguível de uma `EstrategiaComissao` comum, então `Comissao` o aceita sem nenhuma alteração.
+* **`test_decorador_abstrato_nao_pode_ser_instanciado`**, **`test_decorador_valida_bonus_negativo`** e **`test_decorador_valida_desconto_negativo`** — garantem o contrato e as invariantes (não negatividade).
+* **`test_novo_decorador_sem_modificar_comissao`** — demonstra o OCP: um decorador inédito (`ComissaoComBonusDuplicado`) entra no sistema sem tocar em `Comissao` nem nos decoradores existentes.
+* **`test_service_gerar_comissao_com_decorador_bonus_fixo`** e **`test_service_gerar_comissao_com_decorador_em_cadeia`** — exercitam a composição através da camada de serviço `gerar_comissao`, confirmando que o decorador flui pelo caso de uso sem mudanças.
+
+---
+
+### 7. Análise de Custo e Benefício da Aplicação do Padrão
+
+#### 7.1 Benefícios Concretos
+- **Elimina a explosão combinatória:** uma nova combinação de bônus/taxa é montada por composição em tempo de execução, não por uma subclasse nova para cada variante.
+- **SRP reforçado:** cada decorador tem uma única responsabilidade (somar bônus, deduzir desconto, somar bônus percentual), enquanto antes o `ComissaoBarbeiroJunior` misturava percentual e desconto.
+- **Transparência total:** decoradores implementam o mesmo `EstrategiaComissao`, então `Comissao` e `gerar_comissao` os consomem sem qualquer modificação (nenhuma linha de `model.py`/`services.py` precisou ser aberta para "habilitar" o padrão no fluxo de uso).
+- **Retrocompatibilidade:** as estratégias `ComissaoBarbeiroSenior`/`ComissaoBarbeiroJunior` foram mantidas intactas, e toda a suíte pré-existente (114 testes) permaneceu verde.
+
+#### 7.2 Custos e Trade-offs
+- **Nova hierarquia de classes:** adicionaram-se quatro classes (`DecoradorComissao` e três concretas). Para um cenário sem bônus/taxas, isso é estrutura extra — mas reflete o domínio real da barbearia.
+- **Indireção e ordem de composição:** o resultado depende da ordem em que os decoradores são empilhados, o que exige disciplina no ponto de montagem. Em contrapartida, essa mesma composição é o que evita o `if/else` encadeado.
+- **Introspecção de tipo no `percentual`:** como decorador não é `ComissaoPercentualFixo`, a comissão serializa `percentual=None` — comportamento já adotado para sênior/júnior e, portanto, consistente com o projeto.
