@@ -309,3 +309,45 @@ Os testes estão em `tests/unit/test_comissao.py` (domínio) e `tests/unit/test_
 - **Nova hierarquia de classes:** adicionaram-se quatro classes (`DecoradorComissao` e três concretas). Para um cenário sem bônus/taxas, isso é estrutura extra — mas reflete o domínio real da barbearia.
 - **Indireção e ordem de composição:** o resultado depende da ordem em que os decoradores são empilhados, o que exige disciplina no ponto de montagem. Em contrapartida, essa mesma composição é o que evita o `if/else` encadeado.
 - **Introspecção de tipo no `percentual`:** como decorador não é `ComissaoPercentualFixo`, a comissão serializa `percentual=None` — comportamento já adotado para sênior/júnior e, portanto, consistente com o projeto.
+
+---
+
+## Seção: Marcello Bimbatti Mazzochi — Agregado Agendamento
+
+## Padrão GoF: Strategy 
+
+* **Nome e Categoria:** Strategy (Comportamental).
+* **Contexto e Problema:** A validação de disponibilidade na `Agenda` pode variar conforme regras de negócio da barbearia (ex.: validação simples por horário vs. cálculo sobreposição considerando a duração de cada serviço). Encaixar essa lógica dentro do método de agendamento violaria o OCP (Open/Closed Principle).
+* **Por que esse padrão (Alternativa considerada):** Foi considerada a alternativa de usar chamadas condicionais (`if/else` com enums de tipo de validação), mas isso tornaria a classe `Agenda` acoplada a novos algoritmos de validação. O **Strategy** permite isolar cada algoritmo de disponibilidade em objetos intercambiáveis.
+* **Participantes Mapeados:**
+  * `Strategy` (Interface): `RegraDisponibilidade`
+  * `ConcreteStrategyA`: `ValidadorHorarioExato`
+  * `ConcreteStrategyB`: `ValidadorSuperposicaoHorario`
+  * `Context`: `Agenda`
+* **Diagrama de Classes (Mermaid):**
+
+```mermaid
+classDiagram
+    class Agenda {
+        -agendamentos: dict
+        -validador: RegraDisponibilidade
+        +adicionar_agendamento(agendamento)
+        +alterar_estrategia_validacao(novo_validador)
+    }
+
+    class RegraDisponibilidade {
+        <<interface>>
+        +validar(agendamento, agendamentos_existentes)*
+    }
+
+    class ValidadorHorarioExato {
+        +validar(agendamento, agendamentos_existentes)
+    }
+
+    class ValidadorSuperposicaoHorario {
+        +validar(agendamento, agendamentos_existentes)
+    }
+
+    Agenda --> RegraDisponibilidade : usa
+    RegraDisponibilidade <|.. ValidadorHorarioExato : implementa
+    RegraDisponibilidade <|.. ValidadorSuperposicaoHorario : implementa
