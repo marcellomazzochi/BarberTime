@@ -495,7 +495,6 @@ Utilizei o auxílio de ferramentas de IA generativa durante o desenvolvimento. T
 #### Checkpoint 3 (GoF): Strategy
 
   * **O que foi feito:** Implementação do padrão GoF Strategy para regras de validação de disponibilidade no agregado Agenda/Agendamento (`src/BarberTime/domain/model.py`), testes automatizados (`tests/test_gof_agenda_strategy.py`) e documentação em `docs/gof.md`.
-  * **Commits:** `[substitua-pelo-seu-hash]`
+  * **Commits:** `6bd34bda0daf7128e1b662dc110daff6fbd51324` `6b019febd8faa71ba561fb4514273f77cdb1ec03` `d64694d3d0083f44f23e85505fb9f58e17a341f7` `3e0fa3deb5a10f32e294a3a4aab1459a040d2bee` `84babd7652d03112cf3e67b1267cd8ffa1e9c4d2`
   * **Decisão de projeto:** Isolar as regras de disponibilidade em objetos Strategy para permitir a troca entre validação simples por slot de horário e validação por intervalo temporal.
   * **Uso de IA generativa:** Utilizado IA generativa para atualizar o código com o padrão GOF, criar o diagrama Mermaid e gerar o suíte de testes unitários do pytest.
-
