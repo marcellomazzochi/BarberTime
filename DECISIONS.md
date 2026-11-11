@@ -486,3 +486,16 @@ Apliquei o padrão GoF Decorator para permitir compor bônus e taxas dinâmicos 
 
 **Declaração de Uso de IA:**
 Utilizei o auxílio de ferramentas de IA generativa durante o desenvolvimento. Todo o conteúdo gerado foi lido e aprovado por mim.
+
+---
+
+### Integrante: Marcello Bimbatti Mazzochi (`marcellomazzochi`)
+**Agregado sob minha responsabilidade:** Agenda
+
+#### Checkpoint 3 (GoF): Strategy
+
+  * **O que foi feito:** Implementação do padrão GoF Strategy para regras de validação de disponibilidade no agregado Agenda/Agendamento (`src/BarberTime/domain/model.py`), testes automatizados (`tests/test_gof_agenda_strategy.py`) e documentação em `docs/gof.md`.
+  * **Commits:** `[substitua-pelo-seu-hash]`
+  * **Decisão de projeto:** Isolar as regras de disponibilidade em objetos Strategy para permitir a troca entre validação simples por slot de horário e validação por intervalo temporal.
+  * **Uso de IA generativa:** Utilizado IA generativa para atualizar o código com o padrão GOF, criar o diagrama Mermaid e gerar o suíte de testes unitários do pytest.
+
