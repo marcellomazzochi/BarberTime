@@ -376,17 +376,17 @@ class ValidadorSuperposicaoHorario(RegraDisponibilidade):
 
     def validar(self, agendamento: Agendamento, agendamentos_existentes: dict) -> None:
         inicio_novo = agendamento.data_hora
-        duracao_nova = getattr(agendamento.servico, "duracao", 30)
+        duracao_nova = getattr(getattr(agendamento, "servico", None), "duracao", 30)
         fim_novo = inicio_novo + timedelta(minutes=duracao_nova)
 
         for (barbeiro_existente, dt_existente), ag_existente in agendamentos_existentes.items():
             if barbeiro_existente == agendamento.barbeiro:
-                duracao_existente = getattr(ag_existente.servico, "duracao", 30)
+                duracao_existente = getattr(getattr(ag_existente, "servico", None), "duracao", 30)
                 fim_existente = dt_existente + timedelta(minutes=duracao_existente)
 
                 if max(inicio_novo, dt_existente) < min(fim_novo, fim_existente):
-                    raise ValueError("Horario em conflito com outro agendamento")
-
+                    raise ValueError("Horario em conflito com outro agendamento do barbeiro")
+                    
 class Agendamento:
     def __init__(self, id, cliente, barbeiro, servico, data_hora):
         self.id = id
@@ -405,11 +405,8 @@ class Agenda:
         self.validador = novo_validador
 
     def adicionar_agendamento(self, agendamento: Agendamento) -> None:
-        if hasattr(agendamento.barbeiro, "validar_agendamento"):
-            duracao = getattr(agendamento.servico, "duracao", 0)
-            agendamento.barbeiro.validar_agendamento(agendamento.data_hora, duracao)
-
         self.validador.validar(agendamento, self.agendamentos)
+        
         horario = (agendamento.barbeiro, agendamento.data_hora)
         self.agendamentos[horario] = agendamento
         
