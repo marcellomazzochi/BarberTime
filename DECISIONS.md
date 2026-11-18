@@ -538,3 +538,36 @@ Utilizei o assistente de IA Antigravity para auxiliar na estruturação e revis�
 
 **Parágrafo de Reflexão Individual (Fase 2):**
 A experiência na Fase 2 do projeto BarberTime foi transformadora para a minha maturidade como desenvolvedor e estudante de engenharia de software. Durante a Fase 1, a nossa principal preocupação era fazer as funcionalidades rodarem e passar nos primeiros testes, o que frequentemente resultava em misturar regras de calendário dentro da entidade e aceitar atalhos na persistência. Na Fase 2, ao sermos desafiados a olhar criticamente para o próprio código, percebi o abismo que existe entre um código que simplesmente funciona e uma arquitetura que acolhe mudanças sem quebrar. No meu agregado, o Barbeiro, refatorar a jornada de trabalho aplicando SRP e depois encapsular todo o ciclo de vida operacional com o padrão GoF State me mostrou na prática como o polimorfismo limpa o domínio e elimina cadeias confusas de condicionais. A maior dor foi sem dúvida o atrito com o mapeamento imperativo do SQLAlchemy, que nos obrigou a sincronizar atributos manuais para contornar a hidratação sem construtor. Se fosse começar o projeto hoje, eu teria optado pelo mapeamento declarativo moderno do SQLAlchemy 2.0 com dataclasses, simplificando as consultas de leitura e mantendo o foco total nas invariantes reais de negócio, sem carregar o peso de um framework monolítico como o Django.
+
+---
+
+### Integrante: Ruan do Nascimento Silva (`ruanlov`)
+**Agregado sob minha responsabilidade:** Comissão
+
+---
+
+#### Entrega Final — Reflexão Individual e Autorrelato
+
+**O que eu fiz:**
+Para a entrega final da Fase 2, contribuí com a perspectiva do agregado Comissão na análise coletiva de frameworks e na retrospectiva arquitetural — em especial no mapeamento dos value objects `PercentualComissao` e `ServicoRealizado` via `composite` no SQLAlchemy e na evidência dos padrões Strategy e Decorator aplicados ao cálculo de comissão — e redigi meu parágrafo de reflexão individual na Parte 2 do `DECISIONS.md`.
+
+**Arquivos alterados:**
+
+| Arquivo | O que mudou |
+|---|---|
+| `DECISIONS.md` | Registro do autorrelato da entrega final e do parágrafo de reflexão individual do agregado Comissão. |
+
+**Hashes dos commits:**
+
+| Marco | Hash | Data |
+|---|---|---|
+| Reflexão individual e autorrelato final (`DECISIONS.md`) | [INSERIR HASH] | 17/11/2026 |
+
+**Decisão de projeto (uma frase de justificativa):**
+Decidi defender a manutenção da arquitetura em camadas para o agregado Comissão, porque foi ela que permitiu aplicar os padrões Strategy e Decorator sem alterar a entidade `Comissao` nem a função `gerar_comissao`, mesmo reconhecendo o custo de indireção do mapeamento imperativo.
+
+**Declaração de Uso de IA:**
+Utilizei ferramentas de IA generativa como apoio durante o desenvolvimento. A IA foi usada apenas como ferramenta auxiliar; todo o conteúdo foi lido, revisado e aprovado por mim.
+
+**Parágrafo de Reflexão Individual (Fase 2):**
+Na Fase 2, o agregado Comissão foi o meu laboratório para entender o custo e o valor de manter o domínio desacoplado. No Checkpoint 2, percebi que o cálculo de comissão violava o Princípio Aberto/Fechado: sem a hierarquia `EstrategiaComissao`, cada nova política de repasse (percentual fixo, sênior, júnior) exigiria abrir a entidade `Comissao`. No Checkpoint 3, o Decorator mostrou que a composição por delegação é mais poderosa do que uma família de estratégias fechadas, pois me deixou combinar bônus e descontos sem criar uma subclasse para cada combinação. O que mais me marcou foi descobrir que a arquitetura em camadas tornou essas mudanças quase gratuitas: apliquei dois padrões sem tocar na entidade `Comissao` nem na função `gerar_comissao`, e os `FakeRepositories` validaram tudo em memória. Paguei o preço na persistência: mapear os value objects `PercentualComissao` e `ServicoRealizado` com `composite` e lidar com o percentual nulo na serialização. Se recomeçasse, eu modelaria a senioridade do barbeiro no domínio desde o início, para que a política de comissão fosse decidida pela entidade, e não por estratégias injetadas manualmente a cada chamada.
