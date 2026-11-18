@@ -653,3 +653,41 @@ Utilizei ferramentas de inteligência artificial generativa como apoio durante o
 **Parágrafo de Reflexão Individual (Fase 2):**
 
 Durante o desenvolvimento do BarberTime, pude perceber na prática que implementar uma funcionalidade vai muito além de fazer com que ela funcione. No início, meu foco estava principalmente em desenvolver as regras da Fidelidade e garantir que elas fossem executadas corretamente. Ao longo do projeto, entretanto, compreendi a importância de organizar essas regras dentro de uma arquitetura que permita testar, manter e evoluir o sistema sem comprometer outras partes da aplicação. Trabalhar com o agregado Fidelidade me ajudou a entender melhor a separação entre domínio, persistência e serviços, além de mostrar como os testes unitários e de integração contribuem para identificar problemas e aumentar a segurança das alterações. Outro aprendizado importante aconteceu durante a análise arquitetural da Fase 2, quando precisei comparar diferentes abordagens e avaliar seus impactos na manutenção e na testabilidade do software. Essa atividade me fez perceber que nem sempre a solução mais simples de implementar é a melhor para manter no longo prazo. Se fosse iniciar o projeto novamente, daria  mais atenção à definição das responsabilidades de cada camada desde o começo, buscando evitar acoplamentos desnecessários e facilitando a evolução das funcionalidades. Considero que o projeto foi importante para transformar conhecimentos teóricos de engenharia de software em experiências práticas, principalmente em relação à organização do código.
+
+---
+
+### Integrante: Marcello Bimbatti Mazzochi (`marcellomazzochi`)
+**Agregado sob minha responsabilidade:** Agenda
+
+---
+
+#### Entrega Final (17/11) — Análise de Frameworks, Retrospectiva e Reflexão Individual
+
+**O que eu fiz:**
+Para a entrega final da Fase 2, complementei os documentos conclusivos do grupo e consolidei o meu autorrelato:
+1. Em `docs/frameworks.md`, adicionei a análise de independência do domínio e de testes isolados com evidências do agregado `Agenda` e das estratégias de disponibilidade (`RegraDisponibilidade`, `ValidadorHorarioExato` e `ValidadorSuperposicaoHorario`), além de corrigir caminhos de links na documentação.
+2. Em `docs/retrospectiva.md`, adicionei às evidências da Fase 2 a análise prática da refatoração OCP e da aplicação do padrão GoF Strategy no agregado `Agenda` (Checkpoints 2 e 3), além de ajustar os links internos do documento.
+
+**Arquivos alterados:**
+
+| Arquivo | O que mudou |
+|---|---|
+| `docs/frameworks.md` | Inclusão de evidências de isolamento do agregado `Agenda` e correção de links. |
+| `docs/retrospectiva.md` | Inclusão da análise da evolução OCP/Strategy em `Agenda` e correção de links. |
+
+**Hashes dos commits:**
+
+| Marco | Hash | Data |
+|---|---|---|
+| Complemento em `docs/frameworks.md` | `22b2aae3d073fcfed39b0700cb9daa8f3632cdaa` | 17/11/2026 |
+| Complemento em `docs/retrospectiva.md` | `c23fab3462d8fcec38147c305ca10d5897e9c8f7` | 17/11/2026 |
+
+
+**Decisão da entrega:**
+Decidi incluir a evolução da Agenda na retrospectiva porque mostrar como foi fácil trocar a regra de horário usando o padrão Strategy prova a vantagem de manter as regras de negócio isoladas no domínio vale a pena.
+
+**Declaração de Uso de IA:**
+Utilizei a IA generativa como assistente para analisar o código do agregado `Agenda`, os critérios da fase 2 e os commits da entrega final. Todo o conteúdo foi revisado e ajustado por mim.
+
+**Reflexão Individual (Fase 2):**
+A experiência na Fase 2 do BarberTime trouxe a compreensão sobre como decisões arquiteturais e padrões de projeto determinam a evolução de um sistema. No início, implementei o agregado `Agenda` com uma regra rígida de igualdade exata de horário diretamente dentro de `adicionar_agendamento`, o que parecia simples, mas travava qualquer extensão. Ao aplicar o princípio Aberto/Fechado (OCP) no Checkpoint 2 e evoluir para o padrão GoF Strategy no Checkpoint 3 com `RegraDisponibilidade`, `ValidadorHorarioExato` e `ValidadorSuperposicaoHorario`, percebi na prática o valor do desacoplamento: consegui introduzir o cálculo de conflitos de horário considerando a duração dos serviços sem alterar a estrutura interna da `Agenda` e mantendo todos os testes anteriores passando. Se fosse recomeçar o projeto eu teria estruturado a persistência da `Agenda` com repositório e mapeamento ORM desde a Fase 1, integrando a camada de serviços e aos endpoints HTTP. Também teria modelado a sobreposição por duração desde o princípio, evitando retrabalho entre os checkpoints. Aprendi a importância de registrar trade-offs e revisar o código gerado por IA.
