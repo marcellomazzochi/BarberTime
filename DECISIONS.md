@@ -528,7 +528,7 @@ Para a entrega final da Fase 2, participei da elaboração dos dois documentos c
 | Marco | Hash | Data |
 |---|---|---|
 | Análise de Frameworks (`docs/frameworks.md`) | `7721312` | 15/11/2026 |
-| Retrospectiva, reflexão individual e autorrelato (`docs/retrospectiva.md` e `DECISIONS.md`) | *(commit desta entrega)* | 17/11/2026 |
+| Retrospectiva, reflexão individual e autorrelato (`docs/retrospectiva.md` e `DECISIONS.md`) | `c01f105` | 17/11/2026 |
 
 **Decisão de projeto (uma frase de justificativa):**
 Decidi defender uma arquitetura híbrida na retrospectiva, preservando a camada de serviços e o domínio puro para as regras complexas de negócio, mas simplificando o mapeamento de persistência para reduzir a fricção observada entre o ORM e os Value Objects durante a Fase 2.
