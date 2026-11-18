@@ -65,3 +65,33 @@ def test_fidelidade_pode_ser_buscada_por_id():
         assert recuperada.cortes_concluidos == 3
 
     engine.dispose()
+
+
+def test_no_show_e_persistido_no_banco():
+    start_mappers()
+
+    engine = create_engine("sqlite:///:memory:")
+    metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+
+    with Session() as session:
+        repositorio = SqlAlchemyFidelidadeRepository(session)
+
+        fidelidade = Fidelidade(
+            id=3,
+            cliente_id=300,
+            cortes_concluidos=10
+        )
+
+        fidelidade.registrar_no_show()
+        repositorio.add(fidelidade)
+        session.commit()
+
+        recuperada = repositorio.get_by_cliente(300)
+
+        assert recuperada is not None
+        assert recuperada.possui_no_show is True
+        assert recuperada.pode_resgatar_corte_gratis() is False
+
+    engine.dispose()
