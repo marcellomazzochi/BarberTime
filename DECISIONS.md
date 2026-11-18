@@ -498,3 +498,43 @@ Utilizei o auxílio de ferramentas de IA generativa durante o desenvolvimento. T
   * **Commits:** `6bd34bda0daf7128e1b662dc110daff6fbd51324` `6b019febd8faa71ba561fb4514273f77cdb1ec03` `d64694d3d0083f44f23e85505fb9f58e17a341f7` `3e0fa3deb5a10f32e294a3a4aab1459a040d2bee` `84babd7652d03112cf3e67b1267cd8ffa1e9c4d2`
   * **Decisão de projeto:** Isolar as regras de disponibilidade em objetos Strategy para permitir a troca entre validação simples por slot de horário e validação por intervalo temporal.
   * **Uso de IA generativa:** Utilizado IA generativa para atualizar o código com o padrão GOF, criar o diagrama Mermaid e gerar o suíte de testes unitários do pytest.
+
+---
+
+## Fase 2 — Entrega Final (Frameworks e Retrospectiva)
+
+### Integrante: Jonathan do Nascimento Melo (`JonathanMelo0`)
+**Agregado sob minha responsabilidade:** Barbeiro
+
+---
+
+#### Entrega Final — Análise de Frameworks, Retrospectiva e Reflexão Individual
+
+**O que eu fiz:**
+Para a entrega final da Fase 2, participei da elaboração dos dois documentos conclusivos do projeto:
+1. Em `docs/frameworks.md`, conduzi a análise crítica dos três frameworks centrais adotados (Flask, SQLAlchemy e pytest). Detalhei o papel de cada um na solução, em qual camada atuam e por que o domínio permanece estritamente independente deles. Mapeei os pontos de Inversão de Controle (IoC no roteamento do Flask, no motor de fixtures do pytest e na hidratação de entidades no SQLAlchemy), apontei três padrões de projeto internos dos frameworks usados no nosso código (Data Mapper, Unit of Work e Decorator) e avaliei as consequências e trade-offs técnicos caso tivéssemos adotado um framework full-stack monolítico como o Django.
+2. Em `docs/retrospectiva.md`, elaborei a retrospectiva arquitetural do projeto, revisitando as previsões do Checkpoint 1 (especialmente a alta velocidade dos testes em contraste com o overhead de camadas), reunindo as evidências reais da Fase 2 (refatoração SRP no Barbeiro, Strategy e Decorator na Comissão, e GoF State no ciclo de vida do Barbeiro) e defendendo a decisão final por uma arquitetura híbrida pragmática para a evolução futura da barbearia.
+
+**Arquivos alterados:**
+
+| Arquivo | O que mudou |
+|---|---|
+| `docs/frameworks.md` | Elaboração da análise completa de frameworks conforme a Seção 5.4 do edital. |
+| `docs/retrospectiva.md` | Elaboração da retrospectiva arquitetural completa conforme a Seção 5.5 do edital. |
+| `DECISIONS.md` | Registro do autorrelato da entrega final e do parágrafo de reflexão individual. |
+
+**Hashes dos commits:**
+
+| Marco | Hash | Data |
+|---|---|---|
+| Análise de Frameworks (`docs/frameworks.md`) | `7721312` | 15/11/2026 |
+| Retrospectiva, reflexão individual e autorrelato (`docs/retrospectiva.md` e `DECISIONS.md`) | *(commit desta entrega)* | 17/11/2026 |
+
+**Decisão de projeto (uma frase de justificativa):**
+Decidi defender uma arquitetura híbrida na retrospectiva, preservando a camada de serviços e o domínio puro para as regras complexas de negócio, mas simplificando o mapeamento de persistência para reduzir a fricção observada entre o ORM e os Value Objects durante a Fase 2.
+
+**Declaração de Uso de IA:**
+Utilizei o assistente de IA Antigravity para auxiliar na estruturação e revisão das seções conceituais de `docs/frameworks.md` e `docs/retrospectiva.md`, especialmente no levantamento dos pontos de inversão de controle e na formulação dos trade-offs comparativos com o Django. Todo o texto foi revisado, editado e alinhado com o código real do repositório por mim.
+
+**Parágrafo de Reflexão Individual (Fase 2):**
+A experiência na Fase 2 do projeto BarberTime foi transformadora para a minha maturidade como desenvolvedor e estudante de engenharia de software. Durante a Fase 1, a nossa principal preocupação era fazer as funcionalidades rodarem e passar nos primeiros testes, o que frequentemente resultava em misturar regras de calendário dentro da entidade e aceitar atalhos na persistência. Na Fase 2, ao sermos desafiados a olhar criticamente para o próprio código, percebi o abismo que existe entre um código que simplesmente funciona e uma arquitetura que acolhe mudanças sem quebrar. No meu agregado, o Barbeiro, refatorar a jornada de trabalho aplicando SRP e depois encapsular todo o ciclo de vida operacional com o padrão GoF State me mostrou na prática como o polimorfismo limpa o domínio e elimina cadeias confusas de condicionais. A maior dor foi sem dúvida o atrito com o mapeamento imperativo do SQLAlchemy, que nos obrigou a sincronizar atributos manuais para contornar a hidratação sem construtor. Se fosse começar o projeto hoje, eu teria optado pelo mapeamento declarativo moderno do SQLAlchemy 2.0 com dataclasses, simplificando as consultas de leitura e mantendo o foco total nas invariantes reais de negócio, sem carregar o peso de um framework monolítico como o Django.
