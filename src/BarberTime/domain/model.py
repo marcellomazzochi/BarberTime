@@ -689,7 +689,6 @@ class Comissao:
 
 
 class Fidelidade:
-
     def __init__(
         self,
         id,
@@ -697,6 +696,7 @@ class Fidelidade:
         cortes_concluidos=0,
         historico_atendimentos=None,
         cortes_para_gratis=10,
+        possui_no_show=False,
     ):
         if id is None or cliente_id is None:
             raise ValueError(
@@ -721,6 +721,9 @@ class Fidelidade:
                 "A meta de cortes deve ser um inteiro positivo"
             )
 
+        if not isinstance(possui_no_show, bool):
+            raise ValueError("O no-show deve ser um valor booleano")
+
         self.id = id
         self.cliente_id = cliente_id
         self.cortes_concluidos = cortes_concluidos
@@ -728,7 +731,11 @@ class Fidelidade:
             historico_atendimentos or []
         )
         self.cortes_para_gratis = cortes_para_gratis
-        self._possui_no_show = False
+
+        self._possui_no_show = possui_no_show or any(
+            atendimento.status == StatusAtendimento.FALTOU
+            for atendimento in self.historico_atendimentos
+        )
 
     @property
     def possui_no_show(self):
