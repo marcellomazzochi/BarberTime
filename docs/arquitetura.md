@@ -233,6 +233,19 @@ A arquitetura adotada pelo **BarberTime** — fundamentada nos estilos *Ports & 
   - **Indireção em tempo de execução:** A requisição HTTP percorre quatro camadas de indireção: rota Flask -> função de serviço -> repositório concreto -> sessão SQLAlchemy/mapeamento imperativo -> banco SQLite. Essa pilha de chamadas introduz um pequeno overhead de CPU e alocação de memória por chamada.
   - **Sobrecarga de reconstrução de Value Objects com `composite`:** A reconstituição de objetos como `ServicoRealizado`, `PercentualComissao` e `HorarioTrabalho` a partir das colunas do SQLite exige instanciação dinâmica de dataclasses pelo ORM, o que é ligeiramente mais lento do que ler diretamente um dicionário serializado ou tuplas cruas do driver do banco.
 
+
+#### Atributo 4 — Segurança e Integridade das Regras de Negócio (Fidelidade)
+
+| Campo | Descrição |
+|---|---|
+| **Fonte do estímulo** | Cliente que solicita o resgate de um corte gratuito. |
+| **Estímulo** | Um cliente que atingiu a meta de cortes tenta resgatar um benefício, mas possui um registro de no-show. |
+| **Ambiente** | Sistema em operação normal, com dados de fidelidade persistidos no banco SQLite. |
+| **Artefato** | Agregado `Fidelidade`, localizado em `src/BarberTime/domain/model.py`, e método `resgatar_corte_gratis()`. |
+| **Resposta** | O sistema identifica o registro de no-show e rejeita a operação, impedindo o consumo dos cortes acumulados. |
+| **Medida da resposta** | 100% das tentativas de resgate realizadas por clientes com no-show devem ser rejeitadas, retornando HTTP 400 pela API, sem alteração na quantidade de cortes acumulados. |
+
+
 ---
 
 ### 4.2 Pontos de Trade-off Explícitos
