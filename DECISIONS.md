@@ -561,7 +561,7 @@ Para a entrega final da Fase 2, contribuí com a perspectiva do agregado Comiss�
 
 | Marco | Hash | Data |
 |---|---|---|
-| Reflexão individual e autorrelato final (`DECISIONS.md`) | [INSERIR HASH] | 17/11/2026 |
+| Reflexão individual e autorrelato final (`DECISIONS.md`) | `42fffec` | 17/11/2026 |
 
 **Decisão de projeto (uma frase de justificativa):**
 Decidi defender a manutenção da arquitetura em camadas para o agregado Comissão, porque foi ela que permitiu aplicar os padrões Strategy e Decorator sem alterar a entidade `Comissao` nem a função `gerar_comissao`, mesmo reconhecendo o custo de indireção do mapeamento imperativo.
