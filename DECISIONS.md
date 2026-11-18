@@ -364,7 +364,7 @@ Utilizei o agente **Antigravity (Claude Sonnet 4.6 / Gemini 3.8 Flash)** para au
 
 ---
 
-#### Checkpoint 2 — Parte 2: Refatoração SOLID no Agregado de Comissão
+#### Checkpoint 2 — Parte 2: Refatoração SOLID no Agregado de Agenda
 
 * **O que fiz:** Refatorei a classe `Agenda` no arquivo `src/BarberTime/domain/model.py` para adequação aos princípios OCP, delegando a lógica de validação de horário. Adicionei a documentação da refatoração no `docs/solid.md`.
 * **Commits:** `9e4fea2911b43eeda771d4ba603be05efbd4dddc`, `0c227868f3f1b02fea3f195d1cc9f845d79c3822`.
@@ -571,3 +571,41 @@ Utilizei ferramentas de IA generativa como apoio durante o desenvolvimento. A IA
 
 **Parágrafo de Reflexão Individual (Fase 2):**
 Na Fase 2, o agregado Comissão foi o meu laboratório para entender o custo e o valor de manter o domínio desacoplado. No Checkpoint 2, percebi que o cálculo de comissão violava o Princípio Aberto/Fechado: sem a hierarquia `EstrategiaComissao`, cada nova política de repasse (percentual fixo, sênior, júnior) exigiria abrir a entidade `Comissao`. No Checkpoint 3, o Decorator mostrou que a composição por delegação é mais poderosa do que uma família de estratégias fechadas, pois me deixou combinar bônus e descontos sem criar uma subclasse para cada combinação. O que mais me marcou foi descobrir que a arquitetura em camadas tornou essas mudanças quase gratuitas: apliquei dois padrões sem tocar na entidade `Comissao` nem na função `gerar_comissao`, e os `FakeRepositories` validaram tudo em memória. Paguei o preço na persistência: mapear os value objects `PercentualComissao` e `ServicoRealizado` com `composite` e lidar com o percentual nulo na serialização. Se recomeçasse, eu modelaria a senioridade do barbeiro no domínio desde o início, para que a política de comissão fosse decidida pela entidade, e não por estratégias injetadas manualmente a cada chamada.
+
+------
+
+### Integrante: Marcello Bimbatti Mazzochi (`marcellomazzochi`)
+**Agregado sob minha responsabilidade:** Agenda
+
+---
+
+#### Entrega Final (17/11) — Análise de Frameworks, Retrospectiva e Reflexão Individual
+
+**O que eu fiz:**
+Para a entrega final da Fase 2, complementei os documentos conclusivos do grupo e consolidei o meu autorrelato:
+1. Em `docs/frameworks.md`, adicionei a análise de independência do domínio e de testes isolados com evidências do agregado `Agenda` e das estratégias de disponibilidade (`RegraDisponibilidade`, `ValidadorHorarioExato` e `ValidadorSuperposicaoHorario`), além de corrigir caminhos de links na documentação.
+2. Em `docs/retrospectiva.md`, adicionei às evidências da Fase 2 a análise prática da refatoração OCP e da aplicação do padrão GoF Strategy no agregado `Agenda` (Checkpoints 2 e 3), além de ajustar os links internos do documento.
+
+**Arquivos alterados:**
+
+| Arquivo | O que mudou |
+|---|---|
+| `docs/frameworks.md` | Inclusão de evidências de isolamento do agregado `Agenda` e correção de links. |
+| `docs/retrospectiva.md` | Inclusão da análise da evolução OCP/Strategy em `Agenda` e correção de links. |
+
+**Hashes dos commits:**
+
+| Marco | Hash | Data |
+|---|---|---|
+| Complemento em `docs/frameworks.md` | `22b2aae3d073fcfed39b0700cb9daa8f3632cdaa` | 17/11/2026 |
+| Complemento em `docs/retrospectiva.md` | `c23fab3462d8fcec38147c305ca10d5897e9c8f7` | 17/11/2026 |
+
+
+**Decisão da entrega:**
+Decidi incluir a evolução da Agenda na retrospectiva porque mostrar como foi fácil trocar a regra de horário usando o padrão Strategy prova a vantagem de manter as regras de negócio isoladas no domínio vale a pena.
+
+**Declaração de Uso de IA:**
+Utilizei a IA generativa como assistente para analisar o código do agregado `Agenda`, os critérios da fase 2 e os commits da entrega final. Todo o conteúdo foi revisado e ajustado por mim.
+
+**Reflexão Individual (Fase 2):**
+A experiência na Fase 2 do BarberTime trouxe a compreensão sobre como decisões arquiteturais e padrões de projeto determinam a evolução de um sistema. No início, implementei o agregado `Agenda` com uma regra rígida de igualdade exata de horário diretamente dentro de `adicionar_agendamento`, o que parecia simples, mas travava qualquer extensão. Ao aplicar o princípio Aberto/Fechado (OCP) no Checkpoint 2 e evoluir para o padrão GoF Strategy no Checkpoint 3 com `RegraDisponibilidade`, `ValidadorHorarioExato` e `ValidadorSuperposicaoHorario`, percebi na prática o valor do desacoplamento: consegui introduzir o cálculo de conflitos de horário considerando a duração dos serviços sem alterar a estrutura interna da `Agenda` e mantendo todos os testes anteriores passando. Se fosse recomeçar o projeto eu teria estruturado a persistência da `Agenda` com repositório e mapeamento ORM desde a Fase 1, integrando a camada de serviços e aos endpoints HTTP. Também teria modelado a sobreposição por duração desde o princípio, evitando retrabalho entre os checkpoints. Aprendi a importância de registrar trade-offs e revisar o código gerado por IA.
