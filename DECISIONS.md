@@ -160,59 +160,93 @@ cf5d00c update agendamento,
 - A classe `Agenda` tem o dicionário `agendamentos` com a chave: `barbeiro, data_hora, que garante o modelo de negócio que proíbe sobreposições de horários com o mesmo barbeiro.
 
 
-
-
 ### Integrante: Johnny de Godoy (`johnn2c`)
+**Agregado sob minha responsabilidade:** Fidelidade
 
-## Fase 1 — Proposta inicial
+---
+
+#### Fase 1 — Proposta inicial
 
 **Data registrada:** 27/09/2026  
 **Período estimado de elaboração:** semana de 21 a 27/09/2026.
 
-**Atividade:** elaboração e atualização da proposta inicial do projeto BarberTime.
+**O que eu fiz:**
 
-**Arquivo principal:**
+Participei da elaboração e atualização da proposta inicial do projeto BarberTime, contribuindo para a definição do sistema e das funcionalidades previstas para a aplicação.
+
+**Arquivo alterado:**
 - `PROPOSTA.md`
 
 **Commit:**
 - `e7d3178` — Update PROPOSTA.md
 
-**Descrição:** participei da elaboração da proposta inicial do BarberTime, contribuindo para a documentação que orienta o desenvolvimento do sistema.
+**Decisão de projeto:**
 
+A proposta inicial foi desenvolvida considerando a necessidade de um sistema de gerenciamento de barbearia que contemplasse diferentes responsabilidades do negócio, incluindo o controle de clientes, agendamentos, atendimentos, comissões e fidelização.
 
-**checkpoint 2**
+---
 
-**Responsabilidade:** implementação do agregado `Fidelidade`, incluindo regras de domínio, testes, persistência, repositórios, serviços e rotas.
+#### Fase 1 — Checkpoint 2: Implementação do Agregado Fidelidade
 
-### Atividades realizadas
+**Responsabilidade:** Desenvolvimento do agregado `Fidelidade`, incluindo regras de domínio, testes, persistência, repositórios, serviços e endpoints da API.
 
-- Criei e ajustei o agregado `Fidelidade`, estruturando as regras de negócio relacionadas à fidelidade dos clientes.
-- Desenvolvi testes unitários para verificar o comportamento do agregado e suas regras.
-- Refatorei os casos de teste para melhorar a organização e a validação do comportamento esperado.
-- Implementei a tabela de fidelidade e os repositórios necessários para a persistência dos dados.
-- Desenvolvi funções na camada de serviços para executar os casos de uso relacionados à fidelidade.
-- Implementei o registro de `no_show` na classe `Fidelidade`.
-- Desenvolvi um teste de integração para verificar o funcionamento conjunto dos componentes.
-- Adicionei as rotas de fidelidade para disponibilizar as funcionalidades por meio da aplicação.
-- Realizei ajustes para compatibilizar a implementação com os testes do projeto.
+**O que eu fiz:**
 
-### Commits relacionados
+Fiquei responsável pelo desenvolvimento do agregado Fidelidade, implementando as funcionalidades relacionadas ao programa de benefícios dos clientes da barbearia.
 
-- `a3a3e42` — adicionado agregado de fidelidade
-- `154a7a5` — feat: criados testes unitários de fidelidade
-- `f8e6176` — adicionado agregado de fidelidade
-- `5a0074a` — adicionado atendimento aos testes de fidelidade
-- `cb59b47` — adiciona tabela de fidelidade
-- `197742` — adicionados repositórios de fidelidade
-- `fe6fca` — adicionado teste de integração de fidelidade
-- `448f543` — adicionado registrar_no_show na classe fidelidade
-- `4d13e7f` — adicionadas funções de fidelidade
-- `63f4de8` — adicionadas rotas de fidelidade
+Inicialmente, desenvolvi e ajustei a entidade `Fidelidade`, concentrando nela as regras de negócio responsáveis pelo controle dos cortes realizados e pela disponibilização de benefícios gratuitos.
 
-### Decisão técnica
+Durante a implementação, também desenvolvi os mecanismos necessários para impedir o resgate de benefícios quando existe um registro de no-show, garantindo que essa restrição fosse validada pela própria entidade.
 
-A implementação da fidelidade foi organizada em componentes de domínio, persistência, serviços e rotas, mantendo as responsabilidades separadas. Os testes unitários foram utilizados para validar as regras do agregado, enquanto o teste de integração foi adicionado para verificar a interação entre componentes.
+As principais atividades realizadas foram:
 
+- Criação e implementação do agregado `Fidelidade` no modelo de domínio.
+- Desenvolvimento de testes unitários para validar as regras de negócio e o comportamento da entidade.
+- Refatoração dos testes de fidelidade para melhorar a organização e compatibilidade com o restante do projeto.
+- Criação da tabela de fidelidade no banco de dados SQLite.
+- Implementação dos repositórios abstrato, SQLAlchemy e Fake para acesso e persistência dos dados.
+- Desenvolvimento das funções de serviço responsáveis pelo cadastro, consulta, listagem, registro de cortes, registro de no-show e resgate de benefícios.
+- Implementação do método `registrar_no_show()` na entidade `Fidelidade`.
+- Desenvolvimento de teste de integração para verificar a interação entre o agregado e a persistência.
+- Criação dos endpoints Flask para disponibilizar as operações de fidelidade por meio da API.
+- Realização de ajustes para compatibilizar a implementação com os testes e a arquitetura existente.
+
+**Arquivos relacionados:**
+
+| Arquivo | Responsabilidade |
+|---|---|
+| `src/BarberTime/domain/model.py` | Implementação das regras de negócio do agregado Fidelidade. |
+| `src/BarberTime/adapters/orm.py` | Criação da tabela e mapeamento ORM da fidelidade. |
+| `src/BarberTime/adapters/repository.py` | Implementação dos repositórios de fidelidade. |
+| `src/BarberTime/service_layer/services.py` | Implementação dos casos de uso e operações de fidelidade. |
+| `src/BarberTime/entrypoints/flask_app.py` | Disponibilização das operações por meio de endpoints Flask. |
+| `tests/unit/test_fidelidade.py` | Testes unitários das regras de negócio. |
+| `tests/integration/test_fidelidade_repository.py` | Teste de integração da persistência. |
+
+**Commits relacionados:**
+
+| Hash | Descrição |
+|---|---|
+| `a3a3e42` | Adicionado agregado de fidelidade. |
+| `154a7a5` | Criação dos testes unitários de fidelidade. |
+| `f8e6176` | Ajustes no agregado de fidelidade. |
+| `5a0074a` | Ajustes para atendimento aos testes de fidelidade. |
+| `cb59b47` | Adicionada tabela de fidelidade. |
+| `197742` | Adicionados repositórios de fidelidade. |
+| `fe6fca` | Adicionado teste de integração. |
+| `448f543` | Adicionado registro de no-show na classe Fidelidade. |
+| `4d13e7f` | Adicionadas funções de fidelidade na camada de serviços. |
+| `63f4de8` | Adicionadas rotas de fidelidade. |
+
+**Decisão técnica:**
+
+A implementação do agregado Fidelidade foi organizada seguindo a separação de responsabilidades da arquitetura em camadas. As regras de negócio foram mantidas na entidade de domínio, enquanto a persistência ficou sob responsabilidade dos repositórios, a orquestração dos casos de uso na camada de serviços e a comunicação externa nos endpoints Flask.
+
+A principal decisão foi manter a validação do no-show dentro do próprio agregado, evitando que a regra de bloqueio do benefício dependesse exclusivamente da camada de API. Dessa forma, qualquer operação de resgate precisa respeitar a invariante definida no domínio.
+
+**Declaração de Uso de IA:**
+
+Utilizei ferramentas de IA generativa como apoio durante o desenvolvimento, principalmente para esclarecer dúvidas de implementação, revisar a organização dos testes e auxiliar na compatibilização do agregado com a arquitetura existente. As sugestões foram utilizadas como suporte ao desenvolvimento e ajustadas conforme as necessidades do projeto.
 
 ---
 
@@ -278,47 +312,57 @@ Usei IA para consultar o código dos colegas, levantar os pontos importantes par
 
 
 ---
-## Integrante Johnny de Godoy (`johnn2c`)
+## Parte 2 — Fase 2
 
-### Fase 2 — Documentação e análise arquitetural
+### Integrante: Johnny de Godoy (`johnn2c`) — Checkpoint 1
 
+**Responsabilidade:** Análise arquitetural comparativa e documentação da decisão relacionada ao isolamento dos testes unitários.
 
-**Data dos commits:** 22/10/2026  
-**Período estimado:** 22/10/2026.
+**O que fiz e arquivos modificados:**
 
-### Atividades realizadas
+Fiquei responsável por complementar a documentação arquitetural do projeto, contribuindo com a análise das alternativas de arquitetura e com o registro de decisões técnicas.
 
-- Atualizei `docs/arquitetura.md` para registrar a análise arquitetural.
-- Adicionei a Seção 5, comparando a arquitetura adotada com a alternativa Active Record + Transaction Script.
-- Comparei as abordagens pelos atributos de manutenibilidade, testabilidade e desempenho.
-- Registrei a conclusão de manter a arquitetura atual, considerando os padrões exigidos no projeto.
-- Documentei a decisão relacionada ao isolamento dos testes unitários por meio de um ADR.
-- Ajustei o identificador do ADR para manter a documentação consistente.
+Minhas atividades foram:
 
-### Arquivos relacionados
+- Atualizei o arquivo `docs/arquitetura.md`, adicionando a Seção 5, dedicada à análise comparativa entre a arquitetura atual do BarberTime e a alternativa Active Record + Transaction Script.
+- Analisei as diferenças entre as duas abordagens considerando os atributos de qualidade de manutenibilidade, testabilidade e desempenho.
+- Avaliei os benefícios e limitações da arquitetura atual, baseada em Ports & Adapters, Repository e Service Layer.
+- Registrei os motivos para manter a arquitetura adotada no projeto, considerando a separação de responsabilidades e a facilidade de testar as regras de negócio independentemente da infraestrutura.
+- Elaborei um ADR para documentar a decisão arquitetural relacionada ao isolamento dos testes unitários.
+- Realizei ajustes no identificador do ADR para manter a sequência e a organização dos documentos de decisões arquiteturais do projeto.
 
-- `docs/arquitetura.md`
-- `docs/adr/` — ADR de isolamento dos testes unitários e arquivo com identificador atualizado.
+**Arquivos relacionados:**
 
-### Commits relacionados
+| Arquivo | O que foi realizado |
+|---|---|
+| `docs/arquitetura.md` | Adição da análise comparativa entre as arquiteturas e avaliação dos atributos de qualidade. |
+| `docs/adr/` | Criação e atualização do identificador do ADR relacionado ao isolamento dos testes unitários. |
 
-- `f6cfde` — Adicionada seção 5
-- `64ca6bb` — atualização arquitetura
-- `54b2ac6` — adicionado ADR de isolamento dos testes unitários
-- `7c30b43` — alterado identificador do ADR
+**Commits:**
 
-### Decisão técnica
+| Hash | Descrição |
+|---|---|
+| `f6cfde` | Adicionada Seção 5 da documentação arquitetural. |
+| `64ca6bb` | Atualização do arquivo de arquitetura. |
+| `54b2ac6` | Adicionado ADR de isolamento dos testes unitários. |
+| `7c30b43` | Alterado identificador do ADR. |
 
-A análise comparativa considera a arquitetura atual baseada em Ports & Adapters, Repository e Service Layer e a alternativa Active Record + Transaction Script. A recomendação é manter os padrões atuais, considerando a separação das responsabilidades e a testabilidade. A alternativa foi analisada documentalmente, não implementada como substituição da arquitetura do projeto.
+**Decisão de projeto:**
 
-### Uso de IA generativa
+A análise comparativa demonstrou que a arquitetura atual, baseada em Ports & Adapters, Repository e Service Layer, oferece uma separação de responsabilidades que favorece a manutenibilidade e a testabilidade do sistema.
 
-Utilizei o ChatGPT como ferramenta de apoio para compreender os requisitos da atividade,  revisar a documentação e organizar as justificativas técnicas. As sugestões foram usadas apenas como apoio.
+A alternativa Active Record + Transaction Script foi considerada, mas não foi adotada, pois concentraria responsabilidades de persistência e regras de negócio em estruturas mais acopladas. A decisão foi manter a arquitetura existente, preservando o domínio independente da infraestrutura e permitindo testar as regras de negócio utilizando repositórios Fake.
 
+Também documentei a importância do isolamento dos testes unitários, permitindo validar o comportamento das entidades e dos serviços sem depender de conexões com o banco de dados ou de componentes externos.
+
+**Declaração de Uso de IA:**
+
+Utilizei o ChatGPT como ferramenta de apoio para compreender os requisitos da atividade e analisar as diferenças entre as alternativas arquiteturais. As sugestões foram utilizadas como auxílio, sendo ajustadas de acordo com a arquitetura e as características reais do projeto.
+
+---
 ### Observação sobre o histórico
 
 As datas foram organizadas a partir do histórico de commits disponível. Os períodos identificados como estimados representam aproximações do período de trabalho, e não necessariamente o horário ou o dia em que cada atividade foi iniciada.
-
 
 
 
@@ -364,7 +408,7 @@ Utilizei o agente **Antigravity (Claude Sonnet 4.6 / Gemini 3.8 Flash)** para au
 
 ---
 
-#### Checkpoint 2 — Parte 2: Refatoração SOLID no Agregado de Agenda
+#### Checkpoint 2 — Parte 2: Refatoração SOLID no Agregado de Comissão
 
 * **O que fiz:** Refatorei a classe `Agenda` no arquivo `src/BarberTime/domain/model.py` para adequação aos princípios OCP, delegando a lógica de validação de horário. Adicionei a documentação da refatoração no `docs/solid.md`.
 * **Commits:** `9e4fea2911b43eeda771d4ba603be05efbd4dddc`, `0c227868f3f1b02fea3f195d1cc9f845d79c3822`.
@@ -572,40 +616,40 @@ Utilizei ferramentas de IA generativa como apoio durante o desenvolvimento. A IA
 **Parágrafo de Reflexão Individual (Fase 2):**
 Na Fase 2, o agregado Comissão foi o meu laboratório para entender o custo e o valor de manter o domínio desacoplado. No Checkpoint 2, percebi que o cálculo de comissão violava o Princípio Aberto/Fechado: sem a hierarquia `EstrategiaComissao`, cada nova política de repasse (percentual fixo, sênior, júnior) exigiria abrir a entidade `Comissao`. No Checkpoint 3, o Decorator mostrou que a composição por delegação é mais poderosa do que uma família de estratégias fechadas, pois me deixou combinar bônus e descontos sem criar uma subclasse para cada combinação. O que mais me marcou foi descobrir que a arquitetura em camadas tornou essas mudanças quase gratuitas: apliquei dois padrões sem tocar na entidade `Comissao` nem na função `gerar_comissao`, e os `FakeRepositories` validaram tudo em memória. Paguei o preço na persistência: mapear os value objects `PercentualComissao` e `ServicoRealizado` com `composite` e lidar com o percentual nulo na serialização. Se recomeçasse, eu modelaria a senioridade do barbeiro no domínio desde o início, para que a política de comissão fosse decidida pela entidade, e não por estratégias injetadas manualmente a cada chamada.
 
-------
 
-### Integrante: Marcello Bimbatti Mazzochi (`marcellomazzochi`)
-**Agregado sob minha responsabilidade:** Agenda
+### Integrante: Johnny de Godoy (`johnn2c`)
+**Agregado sob minha responsabilidade:** Fidelidade
 
----
-
-#### Entrega Final (17/11) — Análise de Frameworks, Retrospectiva e Reflexão Individual
+#### Entrega Final — Reflexão Individual e Autorrelato
 
 **O que eu fiz:**
-Para a entrega final da Fase 2, complementei os documentos conclusivos do grupo e consolidei o meu autorrelato:
-1. Em `docs/frameworks.md`, adicionei a análise de independência do domínio e de testes isolados com evidências do agregado `Agenda` e das estratégias de disponibilidade (`RegraDisponibilidade`, `ValidadorHorarioExato` e `ValidadorSuperposicaoHorario`), além de corrigir caminhos de links na documentação.
-2. Em `docs/retrospectiva.md`, adicionei às evidências da Fase 2 a análise prática da refatoração OCP e da aplicação do padrão GoF Strategy no agregado `Agenda` (Checkpoints 2 e 3), além de ajustar os links internos do documento.
 
-**Arquivos alterados:**
+Para a entrega final do projeto BarberTime, contribuí com a evolução e documentação do agregado Fidelidade, além da análise arquitetural realizada durante a Fase 2.
 
-| Arquivo | O que mudou |
+No desenvolvimento do agregado Fidelidade, trabalhei na implementação das regras de negócio responsáveis por controlar a quantidade de cortes realizados pelo cliente e verificar as condições necessárias para a concessão de benefícios. Também participei da criação dos testes unitários, dos repositórios para persistência dos dados, da integração com a camada de serviços e da disponibilização das funcionalidades por meio das rotas da aplicação.
+
+Na Fase 2, contribuí com a análise comparativa entre a arquitetura adotada pelo projeto, baseada em Ports & Adapters, Repository e Service Layer, e a alternativa Active Record + Transaction Script. Essa análise considerou aspectos como manutenibilidade, testabilidade e desempenho, resultando na recomendação de manter a arquitetura atual. Também participei da documentação da decisão relacionada ao isolamento dos testes unitários por meio de um ADR.
+
+**Arquivos relacionados:**
+
+| Arquivo | O que foi desenvolvido |
 |---|---|
-| `docs/frameworks.md` | Inclusão de evidências de isolamento do agregado `Agenda` e correção de links. |
-| `docs/retrospectiva.md` | Inclusão da análise da evolução OCP/Strategy em `Agenda` e correção de links. |
+| `src/BarberTime/domain/model.py` | Implementação do agregado Fidelidade e suas regras de negócio. |
+| `src/BarberTime/adapters/repository.py` | Estrutura dos repositórios relacionados à fidelidade. |
+| `src/BarberTime/service_layer/services.py` | Implementação das operações e regras de serviço relacionadas à fidelidade. |
+| `src/BarberTime/entrypoints/` | Integração das funcionalidades de fidelidade com as rotas da aplicação. |
+| `tests/` | Criação de testes unitários e de integração para validar o funcionamento do agregado. |
+| `docs/arquitetura.md` | Análise comparativa entre a arquitetura atual e a alternativa Active Record + Transaction Script. |
+| `docs/adr/` | Documentação da decisão relacionada ao isolamento dos testes unitários. |
 
-**Hashes dos commits:**
+**Decisão de projeto (uma frase de justificativa):**
 
-| Marco | Hash | Data |
-|---|---|---|
-| Complemento em `docs/frameworks.md` | `22b2aae3d073fcfed39b0700cb9daa8f3632cdaa` | 17/11/2026 |
-| Complemento em `docs/retrospectiva.md` | `c23fab3462d8fcec38147c305ca10d5897e9c8f7` | 17/11/2026 |
-
-
-**Decisão da entrega:**
-Decidi incluir a evolução da Agenda na retrospectiva porque mostrar como foi fácil trocar a regra de horário usando o padrão Strategy prova a vantagem de manter as regras de negócio isoladas no domínio vale a pena.
+Decidi manter as regras de negócio da Fidelidade concentradas no domínio, separando a persistência, a execução dos casos de uso e a comunicação com a aplicação, pois essa organização facilita os testes, reduz o acoplamento e torna futuras alterações mais seguras.
 
 **Declaração de Uso de IA:**
-Utilizei a IA generativa como assistente para analisar o código do agregado `Agenda`, os critérios da fase 2 e os commits da entrega final. Todo o conteúdo foi revisado e ajustado por mim.
 
-**Reflexão Individual (Fase 2):**
-A experiência na Fase 2 do BarberTime trouxe a compreensão sobre como decisões arquiteturais e padrões de projeto determinam a evolução de um sistema. No início, implementei o agregado `Agenda` com uma regra rígida de igualdade exata de horário diretamente dentro de `adicionar_agendamento`, o que parecia simples, mas travava qualquer extensão. Ao aplicar o princípio Aberto/Fechado (OCP) no Checkpoint 2 e evoluir para o padrão GoF Strategy no Checkpoint 3 com `RegraDisponibilidade`, `ValidadorHorarioExato` e `ValidadorSuperposicaoHorario`, percebi na prática o valor do desacoplamento: consegui introduzir o cálculo de conflitos de horário considerando a duração dos serviços sem alterar a estrutura interna da `Agenda` e mantendo todos os testes anteriores passando. Se fosse recomeçar o projeto eu teria estruturado a persistência da `Agenda` com repositório e mapeamento ORM desde a Fase 1, integrando a camada de serviços e aos endpoints HTTP. Também teria modelado a sobreposição por duração desde o princípio, evitando retrabalho entre os checkpoints. Aprendi a importância de registrar trade-offs e revisar o código gerado por IA.
+Utilizei ferramentas de inteligência artificial generativa como apoio durante o desenvolvimento e a documentação do projeto, principalmente para esclarecer conceitos de arquitetura, auxiliar na organização das justificativas técnicas e revisar os textos produzidos. As sugestões foram utilizadas como suporte ao trabalho, sendo necessário compreender e avaliar sua aplicação de acordo com a estrutura e os requisitos do projeto.
+
+**Parágrafo de Reflexão Individual (Fase 2):**
+
+Durante o desenvolvimento do BarberTime, pude perceber na prática que implementar uma funcionalidade vai muito além de fazer com que ela funcione. No início, meu foco estava principalmente em desenvolver as regras da Fidelidade e garantir que elas fossem executadas corretamente. Ao longo do projeto, entretanto, compreendi a importância de organizar essas regras dentro de uma arquitetura que permita testar, manter e evoluir o sistema sem comprometer outras partes da aplicação. Trabalhar com o agregado Fidelidade me ajudou a entender melhor a separação entre domínio, persistência e serviços, além de mostrar como os testes unitários e de integração contribuem para identificar problemas e aumentar a segurança das alterações. Outro aprendizado importante aconteceu durante a análise arquitetural da Fase 2, quando precisei comparar diferentes abordagens e avaliar seus impactos na manutenção e na testabilidade do software. Essa atividade me fez perceber que nem sempre a solução mais simples de implementar é a melhor para manter no longo prazo. Se fosse iniciar o projeto novamente, daria  mais atenção à definição das responsabilidades de cada camada desde o começo, buscando evitar acoplamentos desnecessários e facilitando a evolução das funcionalidades. Considero que o projeto foi importante para transformar conhecimentos teóricos de engenharia de software em experiências práticas, principalmente em relação à organização do código.
