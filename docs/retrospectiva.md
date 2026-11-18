@@ -6,7 +6,7 @@
 
 ## 1. Revisão da Análise do Checkpoint 1: As Previsões se Confirmaram?
 
-No Checkpoint 1, documentamos no [docs/arquitetura.md](file:///c:/Users/jonat/OneDrive/Desktop/BarberTime/docs/arquitetura.md) e no [ADR 0002](file:///c:/Users/jonat/OneDrive/Desktop/BarberTime/docs/adr/0002-mapeamento-imperativo-com-sqlalchemy-para-preservar-dominio-puro.md) que a adoção da arquitetura limpa em camadas traria alta testabilidade e independência tecnológica, ao custo de maior verbosidade e sobrecarga estrutural inicial.
+No Checkpoint 1, documentamos no [docs/arquitetura.md](arquitetura.md) e no [ADR 0002](adr/0002-mapeamento-imperativo-com-sqlalchemy-para-preservar-dominio-puro.md) que a adoção da arquitetura limpa em camadas traria alta testabilidade e independência tecnológica, ao custo de maior verbosidade e sobrecarga estrutural inicial.
 
 ### 1.1 O que se confirmou com louvor: Testabilidade e Estabilidade
 * **Velocidade da suíte de testes:** A previsão de que testes sem dependência de banco de dados rodariam em tempo quase nulo se confirmou integralmente. A suíte completa do projeto saltou de poucas dezenas de testes na Fase 1 para **129 testes automatizados na Fase 2**, e roda integralmente em **0,93 segundos**.
@@ -30,6 +30,8 @@ A convivência diária com o código durante os Checkpoints 2 e 3 gerou evidênc
    A introdução do padrão GoF State (commits `c16b32f` e `aacb622`) permitiu modelar o ciclo de vida do barbeiro (`DISPONIVEL`, `EM_FERIAS`, `EM_PAUSA`, `INATIVO`) através de polimorfismo puro. O `FakeBarbeiroRepository` possibilitou validar todas as transições de estado e o bloqueio de agendamentos na camada de serviço sem depender de commits em banco de dados.
 3. **Padrão Decorator na Comissão (Checkpoint 3):**  
    O desacoplamento entre o cálculo de repasse e a entidade `Comissao` permitiu empilhar bônus e taxas dinâmicas em tempo de execução sem alterar uma única linha da entidade principal.
+4. **Refatoração OCP e Padrão GoF Strategy no Agregado Agenda (Checkpoints 2 e 3):**  
+   Como `Agenda` e `Agendamento` residem em `domain/model.py`, foi possível extrair a interface `RegraDisponibilidade` (`ValidadorHorarioExato`, commits `9e4fea2` e `0c22786`) e evoluir para a validação de intervalo temporal considerando a duração do serviço (`ValidadorSuperposicaoHorario`, commits `6bd34bd` a `84babd7`), mantendo os testes originais da Fase 1 verdes.
 
 ### 2.2 Onde as camadas geraram atrito e complexidade desnecessária
 1. **A fricção do Mapeamento Imperativo clássico do SQLAlchemy:**  
