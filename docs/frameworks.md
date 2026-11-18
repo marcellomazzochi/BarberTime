@@ -35,12 +35,14 @@ def validar_horario(barbeiro_id):
 Essa separação assegura que o núcleo da barbearia permaneça livre de detalhes de serialização web, headers ou cookies.
 
 ### 1.2 O SQLAlchemy e o Mapeamento Imperativo
-Conforme documentado no [ADR 0002](file:///c:/Users/jonat/OneDrive/Desktop/BarberTime/docs/adr/0002-mapeamento-imperativo-com-sqlalchemy-para-preservar-dominio-puro.md), a opção pelo mapeamento clássico (`mapper_registry.map_imperatively`) em `src/BarberTime/adapters/orm.py` permitiu que a entidade `barbeiro`, o agregado `Comissao` e os objetos de valor `JornadaTrabalho` e `PercentualComissao` fossem modelados com foco exclusivo no negócio:
+Conforme documentado no [ADR 0002](adr/0002-mapeamento-imperativo-com-sqlalchemy-para-preservar-dominio-puro.md), a opção pelo mapeamento clássico (`mapper_registry.map_imperatively`) em `src/BarberTime/adapters/orm.py` permitiu que a entidade `barbeiro`, o agregado `Comissao` e os objetos de valor `JornadaTrabalho` e `PercentualComissao` fossem modelados com foco exclusivo no negócio:
 - A infraestrutura de tabelas (`barbeiros`, `atendimentos`, `comissoes`, `fidelidades`) é configurada de forma dissociada.
 - A função `start_mappers()` é o único ponto que conecta tabelas às classes de negócio, preservando a pureza de `domain/model.py`.
+- No caso do agregado `Agenda` (`Agendamento`, `RegraDisponibilidade`, `ValidadorHorarioExato` e `ValidadorSuperposicaoHorario`), a independência é total: as regras de conflito de horário operam integralmente em memória no domínio, sem exigir mapeamento em `orm.py`.
 
 ### 1.3 O pytest como Ferramenta de Testes Isolados
 O `pytest` garante que possamos exercitar tanto a lógica pura de domínio em milissegundos quanto fluxos integrados com SQLite em memória (`conftest.py`). A suíte completa de **129 testes executa em menos de 1 segundo**, sem que o código de produção precise de acoplamento com a biblioteca de asserção.
+Na suíte de domínio (`tests/unit/test_domain.py` e `tests/test_gof_agenda_strategy.py`), o `pytest` valida as estratégias de disponibilidade da `Agenda` e o lançamento de `ValueError` via `pytest.raises` sem qualquer fixture de banco de dados.
 
 ---
 
